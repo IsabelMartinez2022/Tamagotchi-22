@@ -68,7 +68,7 @@ uint16_t opt3001_get_status(I2C_Handle *i2c) {
 
 double opt3001_get_data(I2C_Handle *i2c) {
 
-    // JTKJ: Exercise 2. Complete this function to return the measured value as lux
+    //Complete this function to return the measured value as lux
 
 	double lux = -1.0; // return value of the function
 
@@ -78,7 +78,7 @@ double opt3001_get_data(I2C_Handle *i2c) {
     // uint8_t txBuffer[ n ];
     // uint8_t rxBuffer{ n ];
 
-	// JTKJ: Fill in the i2cMessage data structure with correct values
+	// Fill in the i2cMessage data structure with correct values
     //       as shown in the lecture material
     I2C_Transaction i2cMessage;
     i2cMessage.slaveAddress = Board_OPT3001_ADDR;
@@ -93,7 +93,7 @@ double opt3001_get_data(I2C_Handle *i2c) {
 
 		if (I2C_transfer(*i2c, &i2cMessage)) {
 
-		    // JTKJ: Here the conversion from register value to lux
+		    //Here the conversion from register value to lux
 		    uint16_t rxBufferLonger;
 		    uint16_t rxBufferReg;
 
