@@ -12,10 +12,15 @@ GEN_CMDS__FLAG := -l"configPkg/linker.cmd"
 ORDERED_OBJS += \
 "./CC2650STK.obj" \
 "./ccfg.obj" \
-"./empty.obj" \
+"./project_main.obj" \
+"./sensors/bmp280.obj" \
+"./sensors/hdc1000.obj" \
+"./sensors/mpu9250.obj" \
+"./sensors/opt3001.obj" \
+"./sensors/tmp007.obj" \
 "../CC2650STK.cmd" \
 $(GEN_CMDS__FLAG) \
--l"C:/ti/tirtos_cc13xx_cc26xx_2_21_01_08/products/cc26xxware_2_24_03_17272/driverlib/bin/ccs/driverlib.lib" \
+-l"C:/ti/tirtos_cc13xx_cc26xx_2_21_00_06/products/cc26xxware_2_24_03_17272/driverlib/bin/ccs/driverlib.lib" \
 -llibc.a \
 
 -include ../makefile.init
@@ -26,7 +31,9 @@ RMDIR := RMDIR /S/Q
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include subdir_vars.mk
+-include sensors/subdir_vars.mk
 -include subdir_rules.mk
+-include sensors/subdir_rules.mk
 -include objects.mk
 
 ifneq ($(MAKECMDGOALS),clean)
@@ -157,8 +164,8 @@ empty_CC2650STK_TI.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(BIN_OUTPUTS__QUOTED)$(GEN_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)
-	-$(RM) "CC2650STK.obj" "ccfg.obj" "empty.obj" 
-	-$(RM) "CC2650STK.d" "ccfg.d" "empty.d" 
+	-$(RM) "CC2650STK.obj" "ccfg.obj" "project_main.obj" "sensors\bmp280.obj" "sensors\hdc1000.obj" "sensors\mpu9250.obj" "sensors\opt3001.obj" "sensors\tmp007.obj" 
+	-$(RM) "CC2650STK.d" "ccfg.d" "project_main.d" "sensors\bmp280.d" "sensors\hdc1000.d" "sensors\mpu9250.d" "sensors\opt3001.d" "sensors\tmp007.d" 
 	-$(RMDIR) $(GEN_MISC_DIRS__QUOTED)
 	-@echo 'Finished clean'
 	-@echo ' '

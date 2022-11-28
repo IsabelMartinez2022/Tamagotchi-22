@@ -934,11 +934,14 @@ typedef struct {
  * ======== INHERITS ========
  */
 
-#pragma DATA_SECTION(xdc_runtime_ITimestampClient_Interface__BASE__C, ".const:xdc_runtime_ITimestampClient_Interface__BASE__C");
-__FAR__ const xdc_runtime_Types_Base xdc_runtime_ITimestampClient_Interface__BASE__C = {(void *)&xdc_runtime_IModule_Interface__BASE__C};
+#pragma DATA_SECTION(xdc_runtime_IHeap_Interface__BASE__C, ".const:xdc_runtime_IHeap_Interface__BASE__C");
+__FAR__ const xdc_runtime_Types_Base xdc_runtime_IHeap_Interface__BASE__C = {(void *)&xdc_runtime_IModule_Interface__BASE__C};
 
 #pragma DATA_SECTION(xdc_runtime_ISystemSupport_Interface__BASE__C, ".const:xdc_runtime_ISystemSupport_Interface__BASE__C");
 __FAR__ const xdc_runtime_Types_Base xdc_runtime_ISystemSupport_Interface__BASE__C = {(void *)&xdc_runtime_IModule_Interface__BASE__C};
+
+#pragma DATA_SECTION(ti_sysbios_interfaces_IIntrinsicsSupport_Interface__BASE__C, ".const:ti_sysbios_interfaces_IIntrinsicsSupport_Interface__BASE__C");
+__FAR__ const xdc_runtime_Types_Base ti_sysbios_interfaces_IIntrinsicsSupport_Interface__BASE__C = {(void *)&xdc_runtime_IModule_Interface__BASE__C};
 
 #pragma DATA_SECTION(xdc_runtime_IGateProvider_Interface__BASE__C, ".const:xdc_runtime_IGateProvider_Interface__BASE__C");
 __FAR__ const xdc_runtime_Types_Base xdc_runtime_IGateProvider_Interface__BASE__C = {(void *)&xdc_runtime_IModule_Interface__BASE__C};
@@ -946,11 +949,8 @@ __FAR__ const xdc_runtime_Types_Base xdc_runtime_IGateProvider_Interface__BASE__
 #pragma DATA_SECTION(xdc_runtime_IModule_Interface__BASE__C, ".const:xdc_runtime_IModule_Interface__BASE__C");
 __FAR__ const xdc_runtime_Types_Base xdc_runtime_IModule_Interface__BASE__C = {0};
 
-#pragma DATA_SECTION(xdc_runtime_IHeap_Interface__BASE__C, ".const:xdc_runtime_IHeap_Interface__BASE__C");
-__FAR__ const xdc_runtime_Types_Base xdc_runtime_IHeap_Interface__BASE__C = {(void *)&xdc_runtime_IModule_Interface__BASE__C};
-
-#pragma DATA_SECTION(ti_sysbios_interfaces_IIntrinsicsSupport_Interface__BASE__C, ".const:ti_sysbios_interfaces_IIntrinsicsSupport_Interface__BASE__C");
-__FAR__ const xdc_runtime_Types_Base ti_sysbios_interfaces_IIntrinsicsSupport_Interface__BASE__C = {(void *)&xdc_runtime_IModule_Interface__BASE__C};
+#pragma DATA_SECTION(xdc_runtime_ITimestampClient_Interface__BASE__C, ".const:xdc_runtime_ITimestampClient_Interface__BASE__C");
+__FAR__ const xdc_runtime_Types_Base xdc_runtime_ITimestampClient_Interface__BASE__C = {(void *)&xdc_runtime_IModule_Interface__BASE__C};
 
 
 /*
@@ -1780,7 +1780,7 @@ __FAR__ const xdc_SizeT ti_sysbios_knl_Task_Module_State_terminatedQ__O = offset
  *  Define absolute path prefix for this executable's
  *  configuration generated files.
  */
-xdc__META(__ASM__, "@(#)__ASM__ = /home/student/workspace_v10/empty_CC2650STK_TI/Debug/configPkg/package/cfg/empty_pem3");
+xdc__META(__ASM__, "@(#)__ASM__ = C:/ti/empty_CC2650STK_TI/Tamagotchi-22/empty_CC2650STK_TI/Debug/configPkg/package/cfg/empty_pem3");
 
 /*
  *  ======== __ISA__ ========
@@ -7837,23 +7837,6 @@ __FAR__ const xdc_runtime_Core_ObjDesc ti_sysbios_knl_Task_Object__DESC__C = {
 
 
 /*
- * ======== xdc.runtime.IGateProvider VIRTUAL FUNCTIONS ========
- */
-
-/* create */
-xdc_runtime_IGateProvider_Handle xdc_runtime_IGateProvider_create( xdc_runtime_IGateProvider_Module __mod, const xdc_runtime_IGateProvider_Params *__prms, xdc_runtime_Error_Block *__eb )
-{
-    return (xdc_runtime_IGateProvider_Handle) __mod->__sysp->__create(0, 0, 0, (const xdc_UChar*)__prms, sizeof (xdc_runtime_IGateProvider_Params), __eb);
-}
-
-/* delete */
-void xdc_runtime_IGateProvider_delete( xdc_runtime_IGateProvider_Handle *instp )
-{
-    (*instp)->__fxns->__sysp->__delete(instp);
-}
-
-
-/*
  * ======== xdc.runtime.IHeap VIRTUAL FUNCTIONS ========
  */
 
@@ -7865,6 +7848,23 @@ xdc_runtime_IHeap_Handle xdc_runtime_IHeap_create( xdc_runtime_IHeap_Module __mo
 
 /* delete */
 void xdc_runtime_IHeap_delete( xdc_runtime_IHeap_Handle *instp )
+{
+    (*instp)->__fxns->__sysp->__delete(instp);
+}
+
+
+/*
+ * ======== xdc.runtime.IGateProvider VIRTUAL FUNCTIONS ========
+ */
+
+/* create */
+xdc_runtime_IGateProvider_Handle xdc_runtime_IGateProvider_create( xdc_runtime_IGateProvider_Module __mod, const xdc_runtime_IGateProvider_Params *__prms, xdc_runtime_Error_Block *__eb )
+{
+    return (xdc_runtime_IGateProvider_Handle) __mod->__sysp->__create(0, 0, 0, (const xdc_UChar*)__prms, sizeof (xdc_runtime_IGateProvider_Params), __eb);
+}
+
+/* delete */
+void xdc_runtime_IGateProvider_delete( xdc_runtime_IGateProvider_Handle *instp )
 {
     (*instp)->__fxns->__sysp->__delete(instp);
 }
