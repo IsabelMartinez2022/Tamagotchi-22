@@ -65,6 +65,8 @@ uint8_t uartBuffer[30];
 // Definition of the state machine
 enum state { WAITING=1, DATA_READY };
 enum state programState = WAITING;
+enum myState {EAT_MODE, EXERCISE_MODE, PET_MODE, SLEEP_MODE};
+enum myState petState;
 int flag;
 
 // Global variable for ambient light
@@ -127,11 +129,13 @@ static const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
 void simpleBuzzFxn(UArg arg0, UArg arg1) {
 
   while (1) {
+      //ESTADO PROVOCADO POR EL BUTTON??
+      if (){
     buzzerOpen(hBuzzer);
     buzzerSetFrequency(2000);
     Task_sleep(50000 / Clock_tickPeriod);
     buzzerClose();
-    //?
+      }
     Task_sleep(950000 / Clock_tickPeriod);
   }
 
@@ -140,6 +144,7 @@ void simpleBuzzFxn(UArg arg0, UArg arg1) {
 void jukeboxBuzzFxn(UArg arg0, UArg arg1){
 
     while (1) {
+        if (petState== SLEEP_MODE){
         buzzerOpen(hBuzzer);
         buzzerSetFrequency(525);
         Task_sleep(50000 / Clock_tickPeriod);
@@ -154,8 +159,9 @@ void jukeboxBuzzFxn(UArg arg0, UArg arg1){
         buzzerSetFrequency(0);
         Task_sleep(20000 / Clock_tickPeriod);
         buzzerClose();
-
+        }
         Task_sleep(950000 / Clock_tickPeriod);
+        //LAMAR A SHUTDOWN
       }
 
 }
@@ -169,7 +175,7 @@ void shutFxn(PIN_Handle handle, PIN_Id pinId) {
 }
 
 //function for turning it on
-//?
+//NECESARIO?
 void wakeFxn(PIN_Handle handle, PIN_Id pinId) {
 
    PINCC26XX_setWakeup(buttonWake);
@@ -256,13 +262,7 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
     }
 }
 
-void taskPet(UArg arg0, UArg arg1){
-
-    double lux;
-
-    //time
-    //?
-    //time_t start;
+void TamagotchiTask(UArg arg0, UArg arg1){
 
     //I2C_Transaction i2cMessage;
 
@@ -288,8 +288,7 @@ void taskPet(UArg arg0, UArg arg1){
         }
 
     while(1){
-        //start = time (0);
-        //System_printf("Receive sunlight", start);
+
         // OTHER SENSORS OPEN I2C
         i2c = I2C_open(Board_I2C_TMP, &i2cParams);
         if (i2c == NULL) {
@@ -298,6 +297,23 @@ void taskPet(UArg arg0, UArg arg1){
         else {
             System_printf("I2C Initialized!\n");
         }
+
+        switch (petState){
+
+        case EAT_MODE:
+
+            break;
+
+        case EXERCISE_MODE:
+
+            break;
+        }
+
+        case PET_MODE:
+
+            break;
+        }
+
         Task_sleep(2000000/Clock_tickPeriod);
     }
 }
