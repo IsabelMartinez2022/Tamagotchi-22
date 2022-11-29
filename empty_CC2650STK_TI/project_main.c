@@ -60,9 +60,12 @@ Char sensorTaskStack[STACKSIZE];
 Char uartTaskStack[STACKSIZE];
 Char buzzerTaskStack[STACKSIZE];
 
+uint8_t uartBuffer[30];
+
 // Definition of the state machine
 enum state { WAITING=1, DATA_READY };
 enum state programState = WAITING;
+int flag;
 
 // Global variable for ambient light
 double ambientLight = -1000.0;
@@ -205,9 +208,9 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
     UART_Params_init(&uartParams);
     uartParams.writeDataMode = UART_DATA_TEXT;
     uartParams.readDataMode = UART_DATA_TEXT;
-    uartParams.readEcho = UART_ECHO_OFF;
-    uartParams.readMode=UART_MODE_BLOCKING;
     uartParams.baudRate = 9600;
+    uartParams.readMode = UART_MODE_CALLBACK;
+    uartParams.readCallback = &uartFxn;
     uartParams.dataLength = UART_LEN_8;
     uartParams.parityType = UART_PAR_NONE;
     uartParams.stopBits = UART_STOP_ONE;
@@ -222,6 +225,11 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
 
         // Print out sensor data as string to debug window if the state is correct
         // Remember to modify state
+
+        if (flag){
+            UART_read(uart, uartBuffer, 1);
+            flag=0;
+        }
 
         if(DATA_READY){
             /*char string[50];
@@ -279,9 +287,7 @@ void taskPet(UArg arg0, UArg arg1){
             System_abort("Error Initializing i2cMPU\n");
         }
 
-    //sunlight
     while(1){
-        //Display?
         //start = time (0);
         //System_printf("Receive sunlight", start);
         // OTHER SENSORS OPEN I2C
@@ -307,7 +313,6 @@ void UARTAmbientLight (UART_Handle uart, UART_Params uartParams){
     sprintf(echo_msg,"Received: %.3f\n\r",ambientLight);
 
     UART_write(uart, echo_msg, strlen(echo_msg));
-
 }
 
 
@@ -348,7 +353,7 @@ void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
         sprintf(string,"%f", lux);
         System_printf(string);
 
-        // Save the sensor value into the global variable.   Remember to modify state
+        // Save the sensor value into the global variable. Remember to modify state
         ambientLight = lux;
         programState = DATA_READY;
 
