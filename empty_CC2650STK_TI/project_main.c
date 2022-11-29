@@ -358,6 +358,7 @@ void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
         Task_sleep(1000000 / Clock_tickPeriod);
 
         //DESPUÉS DE RECIBIR x valores / en x tiempo 0--> buttonShutFxn
+        //Faltan los ifs para acabar la task o no
     }
 }
 
