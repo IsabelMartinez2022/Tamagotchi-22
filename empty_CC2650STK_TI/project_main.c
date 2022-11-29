@@ -273,15 +273,16 @@ void TamagotchiTask(UArg arg0, UArg arg1){
         I2C_Params i2cParams;
 
    // I2C_MPU_Transaction i2c_MPU_Message
+
         I2C_Handle i2cMPU;
         I2C_Params i2cMPUParams;
 
-   // Open the i2c bus
+   // Init the i2c bus
 
         I2C_Params_init(&i2cParams);
         i2cParams.bitRate = I2C_400kHz;
 
-   // Open the i2cMPU bus
+   // Init the i2cMPU bus
 
         I2C_Params_init(&i2cMPUParams);
         i2cMPUParams.bitRate = I2C_400kHz;
@@ -290,9 +291,7 @@ void TamagotchiTask(UArg arg0, UArg arg1){
             System_abort("Error Initializing i2cMPU\n");
         }
 
-    while(1){
-
-        // OTHER SENSORS OPEN I2C
+   // Open i2c connection
         i2c = I2C_open(Board_I2C_TMP, &i2cParams);
         if (i2c == NULL) {
             System_abort("Error Initializing I2C\n");
@@ -300,6 +299,10 @@ void TamagotchiTask(UArg arg0, UArg arg1){
         else {
             System_printf("I2C Initialized!\n");
         }
+
+        while(1){
+
+
         // OPT3001 SETUP
         opt3001_setup(&i2c);
 
@@ -310,7 +313,54 @@ void TamagotchiTask(UArg arg0, UArg arg1){
             break;
 
         case EXERCISE_MODE:
+            // MPU power on
 
+            PIN_setOutputValue(hMpuPin,Board_MPU_POWER, Board_MPU_POWER_ON);
+
+             // Accelerometer & Gyroscope values: ax,ay,az,gx,gy,gz.
+
+            mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz);
+            sprintf(mstr,"Acceleration: ax:%f, ay:%f, az:%f\n", ax,ay,az);
+            System_printf(mstr);
+            System_flush();
+
+            sprintf(mstr,"Gyroscope: gx:%f, gy:%f, gz:%f\n",gx,gy,gz);
+            System_printf(mstr);
+            System_flush();
+
+            Display_clear(hDisplay);
+            Task_sleep(1000000/Clock_tickPeriod);
+            Display_print0(hDisplay,1,1, "Acceleration:");
+            Task_sleep(2000000/Clock_tickPeriod);
+            Display_clear(hDisplay);
+            Display_print0(hDisplay,1,1, &ax);
+            Task_sleep(1000000/Clock_tickPeriod);
+            Display_clear(hDisplay);
+            Display_print0(hDisplay,1,1, &ay);
+            Task_sleep(1000000/Clock_tickPeriod);
+            Display_clear(hDisplay);
+            Display_print0(hDisplay,1,1, &az);
+            Task_sleep(1000000/Clock_tickPeriod);
+
+            Display_clear(hDisplay);
+            Display_print0(hDisplay,1,1, "Gyroscope:");
+            Task_sleep(2000000/Clock_tickPeriod);
+            Display_clear(hDisplay);
+            Display_print0(hDisplay,1,1, &gx);
+            Task_sleep(1000000/Clock_tickPeriod);
+            Display_clear(hDisplay);
+            Display_print0(hDisplay,1,1, &gy);
+            Task_sleep(1000000/Clock_tickPeriod);
+            Display_clear(hDisplay);
+            Display_print0(hDisplay,1,1, &gz);
+            Task_sleep(1000000/Clock_tickPeriod);
+            Display_clear(hDisplay);
+
+            // close MPU i2c
+            I2C_close(i2cMPU);
+
+            // WAIT 100MS
+            Task_sleep(100000 / Clock_tickPeriod);
             break;
         }
 
