@@ -328,34 +328,6 @@ void TamagotchiTask(UArg arg0, UArg arg1){
             System_printf(mstr);
             System_flush();
 
-            Display_clear(hDisplay);
-            Task_sleep(1000000/Clock_tickPeriod);
-            Display_print0(hDisplay,1,1, "Acceleration:");
-            Task_sleep(2000000/Clock_tickPeriod);
-            Display_clear(hDisplay);
-            Display_print0(hDisplay,1,1, &ax);
-            Task_sleep(1000000/Clock_tickPeriod);
-            Display_clear(hDisplay);
-            Display_print0(hDisplay,1,1, &ay);
-            Task_sleep(1000000/Clock_tickPeriod);
-            Display_clear(hDisplay);
-            Display_print0(hDisplay,1,1, &az);
-            Task_sleep(1000000/Clock_tickPeriod);
-
-            Display_clear(hDisplay);
-            Display_print0(hDisplay,1,1, "Gyroscope:");
-            Task_sleep(2000000/Clock_tickPeriod);
-            Display_clear(hDisplay);
-            Display_print0(hDisplay,1,1, &gx);
-            Task_sleep(1000000/Clock_tickPeriod);
-            Display_clear(hDisplay);
-            Display_print0(hDisplay,1,1, &gy);
-            Task_sleep(1000000/Clock_tickPeriod);
-            Display_clear(hDisplay);
-            Display_print0(hDisplay,1,1, &gz);
-            Task_sleep(1000000/Clock_tickPeriod);
-            Display_clear(hDisplay);
-
             // close MPU i2c
             I2C_close(i2cMPU);
 
@@ -389,6 +361,7 @@ void UARTAmbientLight (UART_Handle uart, UART_Params uartParams){
 
 void UARTAccGyro (UART_Handle uart, UART_Params uartParams){
     //TODO (gráficas)
+
 }
 
 
@@ -531,8 +504,10 @@ Int main(void) {
     Task_Handle sensorTaskHandle1;
     Task_Handle sensorTaskHandle2;
     Task_Params sensorTaskParams;
+
     Task_Handle uartTaskHandle;
     Task_Params uartTaskParams;
+
     Task_Handle buzzerTaskHandle;
     Task_Params buzzerTaskParams;
 
@@ -544,54 +519,66 @@ Int main(void) {
     //Initialize UART
     Board_initUART();
 
-       hBuzzer = PIN_open(&sBuzzer, cBuzzer);
-       if (!hBuzzer) {
-           System_abort("Error initializing buzzer pins\n");
-       }
-       hButtonSelect = PIN_open(&bStateSelect, buttonConfig);
-       if(!hButtonSelect) {
-          System_abort("Error initializing button pins\n");
-       }
-       hLed = PIN_open(&sLed, ledConfig0);
-       if(!hLed) {
-          System_abort("Error initializing LED pins\n");
-       }
-       hLed = PIN_open(&sLed, ledConfig1);
-       if(!hLed) {
-       System_abort("Error initializing LED pins\n");
-       }
-
+    //init buzzer-select-leds pin
     // Open the shut/woke button and led pins
     // Remember to register the above interrupt handler for button
 
-       hButtonShut = PIN_open(&bStateShut, buttonShut);
+    hBuzzer = PIN_open(&sBuzzer, cBuzzer);
+       if (!hBuzzer) {
+           System_abort("Error initializing buzzer pins\n");
+       }
 
-       if(!hButtonShut) {
-          System_abort("Error initializing button shut pins\n");
+    hButtonSelect = PIN_open(&bStateSelect, buttonConfig);
+       if(!hButtonSelect) {
+          System_abort("Error initializing button pins\n");
+       }
+
+    hLed = PIN_open(&sLed, ledConfig0);
+       if(!hLed) {
+          System_abort("Error initializing LED pins\n");
+       }
+
+    hLed = PIN_open(&sLed, ledConfig1);
+       if(!hLed) {
+       System_abort("Error initializing LED pins\n");
        }
        if (PIN_registerIntCb(hButtonShut, &buttonShutFxn) != 0) {
-          System_abort("Error registering button shut callback function");
+           System_abort("Error registering button shut callback function");
        }
        if (PIN_registerIntCb(hButtonSelect, &buttonFxn) != 0) {
-          System_abort("Error registering button select callback function");
+           System_abort("Error registering button select callback function");
+       }
+
+    hButtonShut = PIN_open(&bStateShut, buttonShut);
+        if(!hButtonShut) {
+          System_abort("Error initializing button shut pins\n");
        }
 
 
-    /* Task */
+    /* Sensor Task */
     Task_Params_init(&sensorTaskParams);
     sensorTaskParams.stackSize = STACKSIZE;
     sensorTaskParams.stack = &sensorTaskStack;
     sensorTaskParams.priority=2;
     sensorTaskHandle1 = Task_create(sensorTaskAmbientLight, &sensorTaskParams, NULL);
-    sensorTaskHandle2 = Task_create(sensorTaskAccGyro, &sensorTaskParams, NULL);
 
     if (sensorTaskHandle1 == NULL) {
         System_abort("Task create failed!");
     }
 
+    /* AmbientLight Task */
+
+    Task_Params_init(&sensorTaskParams);
+        sensorTaskParams.stackSize = STACKSIZE;
+        sensorTaskParams.stack = &sensorTaskStack;
+        sensorTaskParams.priority=2;
+        sensorTaskHandle2 = Task_create(sensorTaskAmbientLight, &sensorTaskParams, NULL);
+
     if (sensorTaskHandle2 == NULL) {
             System_abort("Task create failed!");
         }
+
+    /* Uart Task */
 
     Task_Params_init(&uartTaskParams);
     uartTaskParams.stackSize = STACKSIZE;
@@ -603,19 +590,18 @@ Int main(void) {
         System_abort("Task create failed!");
     }
 
-    //Another for buzzer?
+    /* Buzzer Task */
     Task_Params_init(&buzzerTaskParams);
     uartTaskParams.stackSize = STACKSIZE;
     uartTaskParams.stack = &buzzerTaskStack;
     uartTaskParams.priority=2;
     uartTaskHandle = Task_create(buzzerTaskFxn, &buzzerTaskParams, NULL);
 
-        if (buzzerTaskHandle == NULL) {
-            System_abort("Task create failed!");
-        }
+    if (buzzerTaskHandle == NULL) {
+        System_abort("Task create failed!");
+    }
 
     /* Sanity check */
-    //?
     System_printf("Hello world!\n");
     System_flush();
 
