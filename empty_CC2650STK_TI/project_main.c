@@ -148,7 +148,8 @@ void jukeboxBuzzFxn(UArg arg0, UArg arg1){
         if (petState== SLEEP_MODE){
         buzzerOpen(hBuzzer);
         buzzerSetFrequency(660);
-        Task_sleep(50000 / Clock_tickPeriod
+        Task_sleep(50000 / Clock_tickPeriod);
+        buzzerSetFrequency(0);
         Task_sleep(20000 / Clock_tickPeriod);
         buzzerSetFrequency(512);
         Task_sleep(50000 / Clock_tickPeriod););
@@ -156,7 +157,6 @@ void jukeboxBuzzFxn(UArg arg0, UArg arg1){
         Task_sleep(20000 / Clock_tickPeriod);
         buzzerSetFrequency(590);
         Task_sleep(50000 / Clock_tickPeriod);
-        buzzerSetFrequency(0);
         buzzerSetFrequency(0);
         Task_sleep(20000 / Clock_tickPeriod);
         buzzerClose();
@@ -219,7 +219,7 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
     uartParams.readDataMode = UART_DATA_TEXT;
     uartParams.baudRate = 9600;
     uartParams.readMode = UART_MODE_CALLBACK;
-    uartParams.readCallback = &uartFxn;
+    //uartParams.readCallback = &uartFxn;
     uartParams.dataLength = UART_LEN_8;
     uartParams.parityType = UART_PAR_NONE;
     uartParams.stopBits = UART_STOP_ONE;
@@ -319,6 +319,7 @@ void TamagotchiTask(UArg arg0, UArg arg1){
 
              // Accelerometer & Gyroscope values: ax,ay,az,gx,gy,gz.
 
+            //Creo que hace falta utilizar acc.ax y demás
             mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz);
             sprintf(mstr,"Acceleration: ax:%f, ay:%f, az:%f\n", ax,ay,az);
             System_printf(mstr);
@@ -344,6 +345,8 @@ void TamagotchiTask(UArg arg0, UArg arg1){
         Task_sleep(2000000/Clock_tickPeriod);
     }
 }
+
+//void UARTFxn para la llamada desde la interruption
 
 //ES INNECESARIO
 void UARTAmbientLight (UART_Handle uart, UART_Params uartParams){
