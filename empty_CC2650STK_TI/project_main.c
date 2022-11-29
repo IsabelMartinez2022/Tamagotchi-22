@@ -302,7 +302,7 @@ void taskPet(UArg arg0, UArg arg1){
     }
 }
 
-
+//ES INNECESARIO
 void UARTAmbientLight (UART_Handle uart, UART_Params uartParams){
 
     char string[50];
