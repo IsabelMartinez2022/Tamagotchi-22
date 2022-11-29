@@ -20,9 +20,6 @@
 #include <ti/drivers/power/PowerCC26XX.h>
 #include <ti/drivers/UART.h>
 
-#define STACKSIZE 2048
-Char taskStack[STACKSIZE];
-
 /* Board Header files */
 #include "Board.h"
 //#include "wireless/comm_lib.h"
@@ -61,6 +58,7 @@ int  i = 0, j = 0, k = 0, num = 0; //may be used for loops
 #define STACKSIZE 2048
 Char sensorTaskStack[STACKSIZE];
 Char uartTaskStack[STACKSIZE];
+Char buzzerTaskStack[STACKSIZE];
 
 // Definition of the state machine
 enum state { WAITING=1, DATA_READY };
@@ -82,6 +80,14 @@ static PIN_State sLed;
 // MPU power pin global variables
 static PIN_Handle hMpuPin;
 static PIN_State  MpuPinState;
+
+static PIN_Handle hBuzzer;
+static PIN_State sBuzzer;
+
+PIN_Config cBuzzer[] = {
+  Board_BUZZER | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
+  PIN_TERMINATE
+};
 
 PIN_Config buttonShut[] = {
    Board_BUTTON1 | PIN_INPUT_EN | PIN_PULLUP | PIN_IRQ_NEGEDGE,
@@ -109,19 +115,46 @@ PIN_Config ledConfig1[] = {
    PIN_TERMINATE
 };
 
-static PIN_Config MpuPinConfig[] = {
-    Board_MPU_POWER  | PIN_GPIO_OUTPUT_EN | PIN_GPIO_HIGH | PIN_PUSHPULL | PIN_DRVSTR_MAX,
-    PIN_TERMINATE
-};
-
 static const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
     .pinSDA = Board_I2C0_SDA1,
     .pinSCL = Board_I2C0_SCL1
 };
 
 
+void simpleBuzzFxn(UArg arg0, UArg arg1) {
+
+  while (1) {
+    buzzerOpen(hBuzzer);
+    buzzerSetFrequency(2000);
+    Task_sleep(50000 / Clock_tickPeriod);
+    buzzerClose();
+    //?
+    Task_sleep(950000 / Clock_tickPeriod);
+  }
+
+}
+
+void jukeboxBuzzFxn(UArg arg0, UArg arg1){
+
+    /* Arduino code example
+     * tone(buzzer, 1000); // Send 1KHz sound signal...
+      delay(1000);        // ...for 1 sec
+      noTone(buzzer);     // Stop sound...
+      delay(1000);
+      */
+    while (1) {
+        buzzerOpen(hBuzzer);
+        buzzerSetFrequency(523,25); //mirar variable
+        Task_sleep(50000 / Clock_tickPeriod);
+        buzzerClose();
+
+        Task_sleep(950000 / Clock_tickPeriod);
+      }
+
+}
+
 //function for shutting it down
-void buttonShutFxn(PIN_Handle handle, PIN_Id pinId) {
+void shutFxn(PIN_Handle handle, PIN_Id pinId) {
 
    PINCC26XX_setWakeup(buttonShut);
    //CALL JUKEBOX
@@ -129,7 +162,8 @@ void buttonShutFxn(PIN_Handle handle, PIN_Id pinId) {
 }
 
 //function for turning it on
-void buttonWakeFxn(PIN_Handle handle, PIN_Id pinId) {
+//?
+void wakeFxn(PIN_Handle handle, PIN_Id pinId) {
 
    PINCC26XX_setWakeup(buttonWake);
    //CALL JUKEBOX
@@ -393,6 +427,8 @@ Int main(void) {
     Task_Params sensorTaskParams;
     Task_Handle uartTaskHandle;
     Task_Params uartTaskParams;
+    Task_Handle buzzerTaskHandle;
+    Task_Params buzzerTaskParams;
 
     // Initialize board
     Board_initGeneral();
@@ -403,6 +439,10 @@ Int main(void) {
     //Initialize UART
     Board_initUART();
 
+       hBuzzer = PIN_open(&sBuzzer, cBuzzer);
+       if (!hBuzzer) {
+           System_abort("Error initializing buzzer pins\n");
+       }
        hButtonSelect = PIN_open(&bStateSelect, buttonConfig);
        if(!hButtonSelect) {
           System_abort("Error initializing button pins\n");
@@ -418,9 +458,10 @@ Int main(void) {
 
     // Open the shut/woke button and led pins
     // Remember to register the above interrupt handler for button
-    hButtonShut = PIN_open(&bStateShut, buttonShut);
 
-       if( !hButtonShut ) {
+       hButtonShut = PIN_open(&bStateShut, buttonShut);
+
+       if(!hButtonShut) {
           System_abort("Error initializing button shut pins\n");
        }
        if (PIN_registerIntCb(hButtonShut, &buttonShutFxn) != 0) {
@@ -451,14 +492,25 @@ Int main(void) {
     uartTaskParams.stackSize = STACKSIZE;
     uartTaskParams.stack = &uartTaskStack;
     uartTaskParams.priority=2;
-
     uartTaskHandle = Task_create(uartTaskFxn, &uartTaskParams, NULL);
 
     if (uartTaskHandle == NULL) {
         System_abort("Task create failed!");
     }
 
+    //Another for buzzer?
+    Task_Params_init(&buzzerTaskParams);
+    uartTaskParams.stackSize = STACKSIZE;
+    uartTaskParams.stack = &buzzerTaskStack;
+    uartTaskParams.priority=2;
+    uartTaskHandle = Task_create(buzzerTaskFxn, &buzzerTaskParams, NULL);
+
+        if (buzzerTaskHandle == NULL) {
+            System_abort("Task create failed!");
+        }
+
     /* Sanity check */
+    //?
     System_printf("Hello world!\n");
     System_flush();
 
