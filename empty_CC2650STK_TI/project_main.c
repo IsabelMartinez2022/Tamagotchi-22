@@ -297,6 +297,8 @@ void TamagotchiTask(UArg arg0, UArg arg1){
         else {
             System_printf("I2C Initialized!\n");
         }
+        // OPT3001 SETUP
+        opt3001_setup(&i2c);
 
         switch (petState){
 
@@ -347,45 +349,57 @@ void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
     I2C_Handle i2c;
     I2C_Params i2cParams;
 
-    // Open the i2c bus
-       I2C_Params_init(&i2cParams);
-       i2cParams.bitRate = I2C_400kHz;
-       i2c = I2C_open(Board_I2C_TMP, &i2cParams);
+// Open the i2c bus
+    I2C_Params_init(&i2cParams);
+    i2cParams.bitRate = I2C_400kHz;
+    i2c = I2C_open(Board_I2C_TMP, &i2cParams);
 
-       if (i2c == NULL) {
-          System_abort("Error Initializing I2C\n");
-       }
+    if (i2c == NULL) {
+        System_abort("Error Initializing I2C\n");
+    }
 
     //Setup the OPT3001 sensor for use
     //Before calling the setup function, insert 100ms delay with Task_sleep
-           Task_sleep(100000 / Clock_tickPeriod);
-           opt3001_setup(&i2c);
+    Task_sleep(100000 / Clock_tickPeriod);
+    opt3001_setup(&i2c);
+
+
+    // OPT3001 ASK AND SHOW DATA
+    //opt3001_get_data(&i2c, &lux);
+    //sprintf(bstr,"Brightness: %f Lux\n",lux);
+    //System_printf(bstr);
+    //System_flush();
+    //Task_sleep(2000000/Clock_tickPeriod);
+    //Display_clear(hDisplay);
 
     while (1) {
 
         if (programState==WAITING){
-        // Read sensor data and print it to the Debug window as string
-        lux = opt3001_get_data(&i2c);
-        char string[50];
-        sprintf(string,"%f", lux);
-        System_printf(string);
+            // Read sensor data and print it to the Debug window as string
+            lux = opt3001_get_data(&i2c);
+            char string[50];
+            sprintf(string,"%f", lux);
+            System_printf(string);
 
-        // Save the sensor value into the global variable. Remember to modify state
-        ambientLight = lux;
-        programState = DATA_READY;
+            // Save the sensor value into the global variable. Remember to modify state
+            ambientLight = lux;
+            programState = DATA_READY;
 
-        for (int i=0; i<10;i++){
-            ambientLight+= ambientLight;
-        }
-        ambientLight= ambientLight/10;
-        if (ambientLight<1){
-            petState= SLEEP_MODE;
-        }
+            for (int i=0; i<10;i++){
+                ambientLight+= ambientLight;
+            }
+
+            ambientLight= ambientLight/10;
+
+            if (ambientLight<1){
+                petState= SLEEP_MODE;
+            }
 
         }
+
         // Just for sanity check for exercise, you can comment this out
-        System_printf(" sensorTask\n");
-        System_flush();
+        //System_printf(" sensorTask\n");
+        // System_flush();
         Task_sleep(1000000 / Clock_tickPeriod);
         //Faltan los ifs para acabar la task o no
     }
