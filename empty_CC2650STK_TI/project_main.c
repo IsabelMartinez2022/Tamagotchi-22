@@ -136,16 +136,20 @@ void simpleBuzzFxn(UArg arg0, UArg arg1) {
 
 void jukeboxBuzzFxn(UArg arg0, UArg arg1){
 
-    /* Arduino code example
-     * tone(buzzer, 1000); // Send 1KHz sound signal...
-      delay(1000);        // ...for 1 sec
-      noTone(buzzer);     // Stop sound...
-      delay(1000);
-      */
     while (1) {
         buzzerOpen(hBuzzer);
-        buzzerSetFrequency(523,25); //mirar variable
+        buzzerSetFrequency(525);
         Task_sleep(50000 / Clock_tickPeriod);
+        buzzerSetFrequency(0);
+        Task_sleep(20000 / Clock_tickPeriod);
+        buzzerSetFrequency(590);
+        Task_sleep(50000 / Clock_tickPeriod);
+        buzzerSetFrequency(0);
+        Task_sleep(20000 / Clock_tickPeriod);
+        buzzerSetFrequency(660);
+        Task_sleep(50000 / Clock_tickPeriod);
+        buzzerSetFrequency(0);
+        Task_sleep(20000 / Clock_tickPeriod);
         buzzerClose();
 
         Task_sleep(950000 / Clock_tickPeriod);
@@ -170,6 +174,7 @@ void wakeFxn(PIN_Handle handle, PIN_Id pinId) {
    Power_shutdown(NULL,0);
 }
 
+//or lightFxn
 void buttonFxn(PIN_Handle handle, PIN_Id pinId) {
 
     //Blink either led of the device
