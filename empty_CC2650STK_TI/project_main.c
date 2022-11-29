@@ -63,7 +63,7 @@ Char buzzerTaskStack[STACKSIZE];
 uint8_t uartBuffer[30];
 
 // Definition of the state machine
-enum state { WAITING=1, DATA_READY };
+enum state { WAITING=1, DATA_READY};
 enum state programState = WAITING;
 enum myState {EAT_MODE, EXERCISE_MODE, PET_MODE, SLEEP_MODE};
 enum myState petState;
@@ -146,42 +146,42 @@ void jukeboxBuzzFxn(UArg arg0, UArg arg1){
     while (1) {
         if (petState== SLEEP_MODE){
         buzzerOpen(hBuzzer);
-        buzzerSetFrequency(525);
-        Task_sleep(50000 / Clock_tickPeriod);
+        buzzerSetFrequency(660);
+        Task_sleep(50000 / Clock_tickPeriod
+        Task_sleep(20000 / Clock_tickPeriod);
+        buzzerSetFrequency(512);
+        Task_sleep(50000 / Clock_tickPeriod););
         buzzerSetFrequency(0);
         Task_sleep(20000 / Clock_tickPeriod);
         buzzerSetFrequency(590);
         Task_sleep(50000 / Clock_tickPeriod);
         buzzerSetFrequency(0);
-        Task_sleep(20000 / Clock_tickPeriod);
-        buzzerSetFrequency(660);
-        Task_sleep(50000 / Clock_tickPeriod);
         buzzerSetFrequency(0);
         Task_sleep(20000 / Clock_tickPeriod);
         buzzerClose();
         }
         Task_sleep(950000 / Clock_tickPeriod);
-        //LAMAR A SHUTDOWN
+        //Call shutdown
+        shutFxn(hButtonShut,Board_BUTTON1);
       }
 
 }
 
 //function for shutting it down
 void shutFxn(PIN_Handle handle, PIN_Id pinId) {
-
    PINCC26XX_setWakeup(buttonShut);
-   //CALL JUKEBOX
    Power_shutdown(NULL,0);
 }
 
 //function for turning it on
 //NECESARIO?
+/*
 void wakeFxn(PIN_Handle handle, PIN_Id pinId) {
-
    PINCC26XX_setWakeup(buttonWake);
    //CALL JUKEBOX
    Power_shutdown(NULL,0);
 }
+*/
 
 //or lightFxn
 void buttonFxn(PIN_Handle handle, PIN_Id pinId) {
@@ -363,6 +363,7 @@ void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
 
     while (1) {
 
+        if (programState==WAITING){
         // Read sensor data and print it to the Debug window as string
         lux = opt3001_get_data(&i2c);
         char string[50];
@@ -373,12 +374,19 @@ void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
         ambientLight = lux;
         programState = DATA_READY;
 
+        for (int i=0; i<10;i++){
+            ambientLight+= ambientLight;
+        }
+        ambientLight= ambientLight/10;
+        if (ambientLight<1){
+            petState= SLEEP_MODE;
+        }
+
+        }
         // Just for sanity check for exercise, you can comment this out
         System_printf(" sensorTask\n");
         System_flush();
         Task_sleep(1000000 / Clock_tickPeriod);
-
-        //DESPUÉS DE RECIBIR x valores / en x tiempo 0--> buttonShutFxn
         //Faltan los ifs para acabar la task o no
     }
 }
