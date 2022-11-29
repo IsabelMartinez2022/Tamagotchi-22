@@ -340,7 +340,7 @@ void UARTAccGyro (UART_Handle uart, UART_Params uartParams){
 
 void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
 
-    double lux; //CREAR ARRAY?
+    double lux;
 
  //I2C_Transaction i2cMessage;
 
@@ -459,7 +459,6 @@ Int main(void) {
 
     // Initialize board
     Board_initGeneral();
-    //Init6LoWPAN();
 
     //Initialize i2c bus
     Board_initI2C();
