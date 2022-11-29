@@ -521,7 +521,10 @@ void mpu9250_get_data(I2C_Handle *i2c, float *ax, float *ay, float *az, float *g
 	*az = (float)values[2]*aRes - accelBias[2];
 
 	//como calcular la media de los valores de aceleración y threshold. if?
-
+	if (((*ax + *ay + *az)/ 3) > 15)  {
+	        System_printf("MPU9250: Acceleration reading average over 15G\n");
+	        System_flush();
+	 }
 
 	// JTKJ: Convert g values mx, my, mz into degrees per second
 	*gx = (float)values[4]*gRes;
