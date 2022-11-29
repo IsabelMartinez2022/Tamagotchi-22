@@ -63,7 +63,7 @@ Char buzzerTaskStack[STACKSIZE];
 uint8_t uartBuffer[30];
 
 // Definition of the state machine
-enum state { WAITING=1, DATA_READY};
+enum state { WAITING=1, DATA_READY, READ_DATA, SELECT_BUTTON};
 enum state programState = WAITING;
 enum myState {EAT_MODE, EXERCISE_MODE, PET_MODE, SLEEP_MODE};
 enum myState petState;
@@ -130,12 +130,13 @@ void simpleBuzzFxn(UArg arg0, UArg arg1) {
 
   while (1) {
       //ESTADO PROVOCADO POR EL BUTTON??
-      if (){
+      if (programState==SELECT_BUTTON){
     buzzerOpen(hBuzzer);
     buzzerSetFrequency(2000);
     Task_sleep(50000 / Clock_tickPeriod);
     buzzerClose();
       }
+    programState= READ_DATA;
     Task_sleep(950000 / Clock_tickPeriod);
   }
 
@@ -161,7 +162,7 @@ void jukeboxBuzzFxn(UArg arg0, UArg arg1){
         buzzerClose();
         }
         Task_sleep(950000 / Clock_tickPeriod);
-        //Call shutdown
+        //Calling shutdown
         shutFxn(hButtonShut,Board_BUTTON1);
       }
 
@@ -183,22 +184,24 @@ void wakeFxn(PIN_Handle handle, PIN_Id pinId) {
 }
 */
 
-//or lightFxn
+//?
 void buttonFxn(PIN_Handle handle, PIN_Id pinId) {
 
+    programState= SELECT_BUTTON;
     //Blink either led of the device
     //
+    /*
     if(pinId == Board_BUTTON0) {
         i++;
     }
     if(i > 3){
         i=0;
     }
-
     uint_t pinValue = PIN_getOutputValue(Board_LED0);
     pinValue = !pinValue;
 
     PIN_setOutputValue(handle, Board_LED0, pinValue );
+    */
 }
 
 
@@ -401,7 +404,6 @@ void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
         //System_printf(" sensorTask\n");
         // System_flush();
         Task_sleep(1000000 / Clock_tickPeriod);
-        //Faltan los ifs para acabar la task o no
     }
 }
 
@@ -442,6 +444,8 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
     System_flush();
 
            while (1) {
+
+           if (programState==READ_DATA){
            // MPU ask data
            mpu9250_get_data(&i2cMPU, &acc.ax, &acc.ay, &acc.az, &gyro.gx, &gyro.gy, &gyro.gz);
            char string[50];
@@ -457,6 +461,9 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
            System_printf(string);
            sprintf(string,"%d", gyro.gz);
            System_printf(string);
+           }
+           //programState==WAITING cuando detecta 15 samples??
+
            // Sleep 100ms
            Task_sleep(100000 / Clock_tickPeriod);
            }
