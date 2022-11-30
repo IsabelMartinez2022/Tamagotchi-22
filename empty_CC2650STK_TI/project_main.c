@@ -129,6 +129,36 @@ static const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
     .pinSCL = Board_I2C0_SCL1
 };
 
+
+/**/
+uint8_t strContains(char* string, char* toFind)
+{
+    uint8_t slen = strlen(string);
+    uint8_t tFlen = strlen(toFind);
+    uint8_t found = 0;
+    uint8_t s,t;
+
+    if( slen >= tFlen )
+    {
+        for(s=0, t=0; s<slen; s++)
+        {
+            do{
+
+                if( string[s] == toFind[t] )
+                {
+                    if( ++found == tFlen ) return 1;
+                    s++;
+                    t++;
+                }
+                else { s -= found; found=0; t=0; }
+
+              }while(found);
+        }
+        return 0;
+    }
+    else return -1;
+}
+
 /* Task Functions */
 
 //THIS TASK SENDS THE INFO TO THE BACKEND
@@ -180,24 +210,24 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
             * Si el movimiento es           hace ejercicio
             * */
 
-            if(ax > 0.1){
+            if(ax > 0.1 && gx<45 && programState == WAITING){
                // command_to_send[0]='id: /*sensor id*/, EAT,2';
                 strcpy(command_to_send, "id: 2401, EAT: 2");
-                strcpy(sendingStates, "SEND");
+                programState = DATA_READY
                 sprintf(print_msg, "Current State %s\n", sendingStates);
                 System_printf(print_msg);
 
-            }else if(ay > 0.1){
+            }else if(ay > 0.1 && gx<45 && programState == WAITING){
 
                 strcpy(command_to_send, "id: 2401, PET: 2");
-                strcpy(sendingStates, "SEND");
+                programState = DATA_READY
                 sprintf(print_msg, "Current State %s\n", sendingStates);
                 System_printf(print_msg);
 
-            }else if(az >0.1){
+            }else if(az >0.1 && gx<45 && programState == WAITING){
 
                 strcpy(command_to_send, "id: 2401, EXCERCISE: 2");
-                strcpy(sendingStates, "SEND");
+                programState = DATA_READY
                 sprintf(print_msg, "Current State %s\n", sendingStates);
                 System_printf(print_msg);
             }
@@ -287,6 +317,33 @@ void shutFxn() {
 
 /*UART Functions*/
 
+/*UART Function to read the backend*/
+void uartFxn(){
+
+    char echo_msg [30];
+    string found;
+    uart = UART_open(Board_UART0, &uartParams);
+
+    if (uart == NULL) {
+        System_abort("Error opening the UART");
+    }
+
+    UART_read(uart, &input, 80);
+
+    sprintf(echo_msg, "Received: %s\n", input);
+
+    found = strContains(echo_msg, "2401,BEEP");
+    if(found){
+        System_print("My tamagotchi");
+        sprintf(echo_msg, "Received: %s\n", input);
+        System_print(echo_msg);
+
+        programState = BACKEND_STATE;
+
+    }
+   System_printf(echo_msg)
+}
+
 /*UART SensorAccGyro Function */
 void uartTaskFxn(UArg arg0, UArg arg1) {
 
@@ -314,6 +371,7 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
 
         // Print out sensor data as string to debug window if the state is correct
         // Remember to modify state
+
 
         string_compare=strcmp(sendingState, "SEND");
 
@@ -391,7 +449,7 @@ void buzzerTaskFxn(UArg arg0, UArg arg1){
             Task_sleep(50000 / Clock_tickPeriod);
             buzzerClose();
             programState= READ_DATA;
-        }else if(programState == ){ //añadir el estado de leer backend
+        }else if(programState == BACKEND_STATE){ //añadir el estado de leer backend
             buzzerOpen(hBuzzer);
             buzzerSetFrequency(3000);
             Task_sleep(50000 / Clock_tickPeriod);
