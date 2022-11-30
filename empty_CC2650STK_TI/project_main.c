@@ -1,3 +1,8 @@
+/*
+Tamaguachi group
+Nieves Núñez and Isabel Martínez
+*/
+
 /* C Standard library */
 #include <stdio.h>
 #include <stdint.h>
