@@ -26,7 +26,7 @@
 //#include "wireless/comm_lib.h"
 #include "sensors/opt3001.h"
 #include "sensors/mpu9250.h"
-#include "buzzer.c"
+//#include "buzzer.c"
 
 /*Global variables*/
 char csv[80], *token;
@@ -336,7 +336,7 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
     uartParams.readDataMode = UART_DATA_TEXT;
     uartParams.baudRate = 9600;
     uartParams.readMode = UART_MODE_BLOCKING;
-   // uartParams.readCallback = &uartFxn;
+   // uartParams.readCallback = &uartFxn; Decided to use Blocking method
     uartParams.dataLength = UART_LEN_8;
     uartParams.parityType = UART_PAR_NONE;
     uartParams.stopBits = UART_STOP_ONE;
@@ -355,9 +355,9 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
         found = strContains(echo_msg, "2401,BEEP");
 
         if(found){
-            System_print("My tamagotchi");
+            System_printf("My Tamagotchi");
             sprintf(echo_msg, "Received: %s\n", input);
-            System_print(echo_msg);
+            System_printf(echo_msg);
             programState = WARNING_DYING;
         }
         System_printf(echo_msg);
@@ -407,7 +407,9 @@ void buttonFxn(PIN_Handle handle, PIN_Id pinId) {
 
 /* Buzz Function */
 /* Jukebox Function */
-
+/* Functions are commented because of the #10056 error: symbol buzzerOpen redefined: first defined in
+ * "./buzzer.obj"; redefined in "./project_main.obj"
+ *
 void buzzerTaskFxn(UArg arg0, UArg arg1){
 
     while (1) {
@@ -460,7 +462,7 @@ void buzzerTaskFxn(UArg arg0, UArg arg1){
         Task_sleep(100000 / Clock_tickPeriod);
      }
 }
-
+*/
 Int main(void) {
 
     // Task variables
@@ -473,14 +475,14 @@ Int main(void) {
     Task_Params uartTaskParams;
 
     //Buzzer Task variables & init
+    /*
     Task_Handle buzzerTaskHandle;
     Task_Params buzzerTaskParams;
-
     hBuzzer = PIN_open(&sBuzzer, cBuzzer);
     if (!hBuzzer) {
         System_abort("Error initializing buzzer pins\n");
     }
-
+*/
     // Initialize board
     Board_initGeneral();
 
@@ -567,16 +569,16 @@ Int main(void) {
     /*EXTRA*/
 
     /* Buzzer Task */
-
+/*
         Task_Params_init(&buzzerTaskParams);
         uartTaskParams.stackSize = STACKSIZE;
         uartTaskParams.stack = &buzzerTaskStack;
         uartTaskParams.priority=2;
-        uartTaskHandle = Task_create(buzzerTaskFxn, &buzzerTaskParams, NULL);
+        //uartTaskHandle = Task_create(buzzerTaskFxn, &buzzerTaskParams, NULL);
 
         if (buzzerTaskHandle == NULL) {
             System_abort("Task create failed!");
-        }
+        }*/
 
     /* Sanity check */
 

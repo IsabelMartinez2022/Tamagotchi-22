@@ -11,7 +11,7 @@ var makeAssembly = false;
 var Executable = xdc.module('xdc.bld.Executable');
 
 var exeOpts = new Executable.Attrs({
-        cfgScript: 'C:/Users/nieve/OneDrive/Documentos/GitHub/Tamagotchi-22/empty_CC2650STK_TI/empty.cfg',
+        cfgScript: 'C:/ti/empty_CC2650STK_TI/Tamagotchi-22/empty_CC2650STK_TI/empty.cfg',
         profile: 'release',
         cfgHome: 'configPkg',
 });
@@ -41,7 +41,7 @@ else {
 
 var thisObj = {
     cfg:        '../empty.cfg',
-    outputPath: 'C:/Users/nieve/OneDrive/Documentos/GitHub/Tamagotchi-22/empty_CC2650STK_TI/Debug/configPkg',
+    outputPath: 'C:/ti/empty_CC2650STK_TI/Tamagotchi-22/empty_CC2650STK_TI/Debug/configPkg',
     exeName:    'empty' + suffix,
     exeIntName: 'empty' + suffix.replace('.', '_'),
     targ:       targ,
