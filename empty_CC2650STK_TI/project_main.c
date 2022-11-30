@@ -35,7 +35,7 @@ char command_to_send[30];
 //char sendingStates[10];
 
 /*
- * Having the data as an array would be more managable in order to know previous values
+ * Having the data as an array would be more manageable in order to know previous values
  * typedef struct {
    uint8_t ax[8];
    uint8_t ay[8];
@@ -131,7 +131,7 @@ static const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
 };
 
 
-/**/
+/*External code function*/
 uint8_t strContains(char* string, char* toFind)
 {
     uint8_t slen = strlen(string);
@@ -275,7 +275,7 @@ void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
     //Before calling the setup function, insert 100ms delay with Task_sleep
     Task_sleep(100000 / Clock_tickPeriod);
 
-    //configurating the light
+    //configure the light
     opt3001_setup(&i2c);
 
     while (1) {
@@ -320,23 +320,19 @@ void shutFxn() {
 /*UART Functions*/
 
 /*UART Function to read the backend*/
-UART_Params uartFxn(){
+static void uartFxn(UART_Handle handle, void *rxBuf, size_t len){
 
-    UART_Handle uart;
-    UART_Params uartParams;
-
-    UART_Params_init(&uartParams);
-
-    char echo_msg [30];
-    char input[80];
-    uint8_t found;
-    uart = UART_open(Board_UART0, &uartParams);
-
-    if (uart == NULL) {
-        System_abort("Error opening the UART");
-    }
-
-    UART_read(uart, &input, 80);
+    if(programState==DATA_READY){
+            if(buffCount<BLENGTH){
+            strncat(uartStr, rxBuf,BLENGTH);
+            buffCount++;
+            }else if (buffCount<(BLENGTH*2)){
+                strncat(uartStr2, rxBuf,BLENGTH);
+                buffCount++;
+            }
+        }
+    UART_read(handle, rxBuf, 1);
+   // UART_read(uart, &input, 80);
 
     sprintf(echo_msg, "Received: %s\n", input);
 
@@ -350,6 +346,7 @@ UART_Params uartFxn(){
 
     }
    System_printf(echo_msg);
+   return echo_msg;
 }
 
 /*UART SensorAccGyro Function */
