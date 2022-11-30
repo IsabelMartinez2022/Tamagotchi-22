@@ -26,6 +26,7 @@
 //#include "wireless/comm_lib.h"
 #include "sensors/opt3001.h"
 #include "sensors/mpu9250.h"
+#include "Buzzer.h"
 
 /*Global variables*/
 char csv[80], *token;
@@ -58,7 +59,7 @@ Char buzzerTaskStack[STACKSIZE];
 uint8_t uartBuffer[30];
 
 // Definition of the state machine for the flag
-enum state { WAITING=1, DATA_READY, READ_DATA, SELECT_BUTTON, BACKEND_STATE};
+enum state { WAITING=1, DATA_READY, READ_DATA, SELECT_BUTTON, WARNING_DYING};
 enum state programState = WAITING;
 
 enum myState {AWAKE_MODE, SLEEP_MODE}; //used for jukebox
@@ -319,7 +320,7 @@ void shutFxn() {
 /*UART Functions*/
 
 /*UART Function to read the backend*/
-void uartFxn(){
+UART_Params uartFxn(){
 
     UART_Handle uart;
     UART_Params uartParams;
@@ -329,7 +330,6 @@ void uartFxn(){
     char echo_msg [30];
     char input[80];
     uint8_t found;
-
     uart = UART_open(Board_UART0, &uartParams);
 
     if (uart == NULL) {
@@ -346,7 +346,7 @@ void uartFxn(){
         sprintf(echo_msg, "Received: %s\n", input);
         System_print(echo_msg);
 
-        programState = BACKEND_STATE;
+        programState = WARNING_DYING;
 
     }
    System_printf(echo_msg);
@@ -433,6 +433,7 @@ void buzzerTaskFxn(UArg arg0, UArg arg1){
         if (petState== SLEEP_MODE){
         buzzerOpen(hBuzzer);
         buzzerSetFrequency(660);
+
         Task_sleep(50000 / Clock_tickPeriod);
         buzzerSetFrequency(0);
         Task_sleep(20000 / Clock_tickPeriod);
@@ -445,20 +446,34 @@ void buzzerTaskFxn(UArg arg0, UArg arg1){
         buzzerSetFrequency(0);
         Task_sleep(20000 / Clock_tickPeriod);
         buzzerClose();
+
         //Calling shutdown
         shutFxn();
+
         return 0;
+
         }
         if(programState == SELECT_BUTTON){
             buzzerOpen(hBuzzer);
+
             buzzerSetFrequency(2000);
             Task_sleep(50000 / Clock_tickPeriod);
+
             buzzerClose();
+
             programState= READ_DATA;
-        }else if(programState == BACKEND_STATE){ //añadir el estado de leer backend
+        }else if(programState == WARNING_DYING){ //añadir el estado de leer backend
+
             buzzerOpen(hBuzzer);
             buzzerSetFrequency(3000);
-            Task_sleep(50000 / Clock_tickPeriod);
+
+            Task_sleep(20000 / Clock_tickPeriod);
+            buzzerSetFrequency(0);
+            Task_sleep(10000 / Clock_tickPeriod);
+            buzzerSetFrequency(3000);
+            Task_sleep(20000 / Clock_tickPeriod);
+            buzzerSetFrequency(0);
+            Task_sleep(10000 / Clock_tickPeriod);
             buzzerClose();
         }
         Task_sleep(100000 / Clock_tickPeriod);
