@@ -244,68 +244,46 @@ void TamagotchiTask(UArg arg0, UArg arg1){
         }
 
         while(1){
+            if (programState == DATA_READY){
+                switch (petState){
+                    case EAT_MODE:
 
+                        break;
 
-        // OPT3001 SETUP
-        opt3001_setup(&i2c);
+                    case EXERCISE_MODE:
+                        // MPU power on
 
-        switch (petState){
+                        PIN_setOutputValue(hMpuPin,Board_MPU_POWER, Board_MPU_POWER_ON);
 
-        case EAT_MODE:
+                         // Accelerometer & Gyroscope values: ax,ay,az,gx,gy,gz.
 
-            break;
+                        //lookinto  acc.ax etc
+                        mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz);
+                        sprintf(mstr,"Acceleration: ax:%f, ay:%f, az:%f\n", ax,ay,az);
+                        System_printf(mstr);
+                        System_flush();
 
-        case EXERCISE_MODE:
-            // MPU power on
+                        //lookinto  gyro.gx etc
+                        sprintf(mstr,"Gyroscope: gx:%f, gy:%f, gz:%f\n",gx,gy,gz);
+                        System_printf(mstr);
+                        System_flush();
 
-            PIN_setOutputValue(hMpuPin,Board_MPU_POWER, Board_MPU_POWER_ON);
+                        // close MPU i2c
+                        I2C_close(i2cMPU);
 
-             // Accelerometer & Gyroscope values: ax,ay,az,gx,gy,gz.
+                        // WAIT 100MS
+                        Task_sleep(100000 / Clock_tickPeriod);
+                        break;
+                    }
 
-            //lookinto  acc.ax etc
-            mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz);
-            sprintf(mstr,"Acceleration: ax:%f, ay:%f, az:%f\n", ax,ay,az);
-            System_printf(mstr);
-            System_flush();
+                    case PET_MODE:
 
-            //lookinto  gyro.gx etc
-            sprintf(mstr,"Gyroscope: gx:%f, gy:%f, gz:%f\n",gx,gy,gz);
-            System_printf(mstr);
-            System_flush();
+                        break;
 
-            // close MPU i2c
-            I2C_close(i2cMPU);
-
-            // WAIT 100MS
-            Task_sleep(100000 / Clock_tickPeriod);
-            break;
-        }
-
-        case PET_MODE:
-
-            break;
-        }
+                    }
 
         Task_sleep(2000000/Clock_tickPeriod);
     }
-}
-
-void UARTAmbientLight (UART_Handle uart, UART_Params uartParams){
-
-    char string[50];
-    char echo_msg [30];
-    sprintf(string,"%.3f", ambientLight);
-    System_printf(string);
-    programState = WAITING;
-    sprintf(echo_msg,"Received: %.3f\n\r",ambientLight);
-
-    UART_write(uart, echo_msg, strlen(echo_msg));
-}
-
-
-void UARTAccGyro (UART_Handle uart, UART_Params uartParams){
-    //TODO (gráficas)
-
 }
 
 void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
@@ -417,7 +395,7 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
             System_printf(string);
         }
 
-        // TODOprogramState==WAITING cuando detecta 15 samples
+        // TODO programState==WAITING cuando detecta 15 samples
 
        // Sleep 100ms
 
@@ -431,6 +409,48 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
     PIN_setOutputValue(hMpuPin,Board_MPU_POWER, Board_MPU_POWER_OFF);
 }
 
+/*UART Functions*/
+
+void UARTAmbientLight (UART_Handle uart, UART_Params uartParams){
+
+    char string[50];
+    char echo_msg [30];
+    sprintf(string,"%.3f", ambientLight);
+    System_printf(string);
+    programState = WAITING;
+    sprintf(echo_msg,"Received: %.3f\n\r",ambientLight);
+
+    UART_write(uart, echo_msg, strlen(echo_msg));
+}
+
+void UARTAccGyro (UART_Handle uart, UART_Params uartParams){
+    //TODO (gráficas)
+    //ACABAR MIRAR COMO HACERLO ETC
+    char string[50];
+        char echo_msg [30];
+        mpu9250_get_data(&i2cMPU, &acc.ax, &acc.ay, &acc.az, &gyro.gx, &gyro.gy, &gyro.gz);
+                   char string[50];
+                   sprintf(string,"%d", acc.ax);
+                   System_printf(string);
+                   sprintf(string,"%d", acc.ay);
+                   System_printf(string);
+                   sprintf(string,"%d", acc.az);
+                   System_printf(string);
+                   sprintf(string,"%d", gyro.gx);
+                   System_printf(string);
+                   sprintf(string,"%d", gyro.gy);
+                   System_printf(string);
+                   sprintf(string,"%d", gyro.gz);
+                   System_printf(string);
+        sprintf(string,"Acc: x, y, z: %.3f", acc.ax, acc.ay, acc.a);
+        System_printf(string);
+        programState = WAITING;
+        sprintf(echo_msg,"Received: %.3f\n\r",ambientLight);
+
+        UART_write(uart, echo_msg, strlen(echo_msg));
+}
+
+//EXTRA
 /* Buzz Function */
 
 void simpleBuzzFxn(UArg arg0, UArg arg1) {
