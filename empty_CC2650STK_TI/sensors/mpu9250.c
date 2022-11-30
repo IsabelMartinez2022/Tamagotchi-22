@@ -524,4 +524,8 @@ void mpu9250_get_data(I2C_Handle *i2c, float *ax, float *ay, float *az, float *g
 	*gx = (float)values[4]*gRes;
 	*gy = (float)values[5]*gRes;
 	*gz = (float)values[6]*gRes;
+
+	char msg[20];
+	    sprintf(msg,"%.4f,%.4f,%.4f,%.4f,%.4f,%.4f\n",*ax,*ay,*az,*gx,*gy,*gz);
+	    System_printf(msg);
 }

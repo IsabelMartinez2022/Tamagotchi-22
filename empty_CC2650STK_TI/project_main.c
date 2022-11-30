@@ -1,5 +1,6 @@
 /* C Standard library */
 #include <stdio.h>
+#include <stdint.h>
 
 #include <inttypes.h>
 
@@ -56,16 +57,15 @@ Char buzzerTaskStack[STACKSIZE];
 
 uint8_t uartBuffer[30];
 
-// Definition of the state machine
-enum state { WAITING=1, DATA_READY, READ_DATA, SELECT_BUTTON};
+// Definition of the state machine for the flag
+enum state { WAITING=1, DATA_READY, READ_DATA, SELECT_BUTTON, BACKEND_STATE};
 enum state programState = WAITING;
 
 enum myState {AWAKE_MODE, SLEEP_MODE}; //used for jukebox
 enum myState petState= AWAKE_MODE; //awake_mode by defect
 
-//FLAG
-enum msgState {SEND, READING, DETECT};
-enum msgState sendingStates;
+//enum msgState {SEND, READING, DETECT};
+//enum msgState sendingStates;
 
 // Global variable for ambient light
 double ambientLight = -1000.0;
@@ -165,6 +165,7 @@ uint8_t strContains(char* string, char* toFind)
 void sensorTaskAccGyro (UArg arg0, UArg arg1) {
 
     float ax,ay,az,gx,gy,gz;
+    char print_msg[50];
 
     //I2C_Transaction i2cMessage;
     I2C_Handle i2cMPU;
@@ -210,25 +211,25 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
             * Si el movimiento es           hace ejercicio
             * */
 
-            if(ax > 0.1 && gx<45 && programState == WAITING){
+            if(ax > 0.1 && gx < 45 && programState == WAITING){
                // command_to_send[0]='id: /*sensor id*/, EAT,2';
                 strcpy(command_to_send, "id: 2401, EAT: 2");
-                programState = DATA_READY
-                sprintf(print_msg, "Current State %s\n", sendingStates);
+                programState = DATA_READY;
+                sprintf(print_msg, "Horizontal move %s\n", command_to_send);
                 System_printf(print_msg);
 
             }else if(ay > 0.1 && gx<45 && programState == WAITING){
 
                 strcpy(command_to_send, "id: 2401, PET: 2");
-                programState = DATA_READY
-                sprintf(print_msg, "Current State %s\n", sendingStates);
+                programState = DATA_READY;
+                sprintf(print_msg, "Vertical move %s\n", command_to_send);
                 System_printf(print_msg);
 
             }else if(az >0.1 && gx<45 && programState == WAITING){
 
                 strcpy(command_to_send, "id: 2401, EXCERCISE: 2");
-                programState = DATA_READY
-                sprintf(print_msg, "Current State %s\n", sendingStates);
+                programState = DATA_READY;
+                sprintf(print_msg, "Current State %s\n", command_to_send);
                 System_printf(print_msg);
             }
 
@@ -320,8 +321,15 @@ void shutFxn() {
 /*UART Function to read the backend*/
 void uartFxn(){
 
+    UART_Handle uart;
+    UART_Params uartParams;
+
+    UART_Params_init(&uartParams);
+
     char echo_msg [30];
-    string found;
+    char input[80];
+    uint8_t found;
+
     uart = UART_open(Board_UART0, &uartParams);
 
     if (uart == NULL) {
@@ -341,7 +349,7 @@ void uartFxn(){
         programState = BACKEND_STATE;
 
     }
-   System_printf(echo_msg)
+   System_printf(echo_msg);
 }
 
 /*UART SensorAccGyro Function */
@@ -373,12 +381,10 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
         // Remember to modify state
 
 
-        string_compare=strcmp(sendingState, "SEND");
-
-        if (string_compare==0){
+       if (programState==DATA_READY){
             UART_write(uart,command_to_send, strlen(command_to_send)+1);
             Task_sleep(100000 / Clock_tickPeriod);
-            strcpy(sendingState, "DETECT");
+            programState = WAITING;
         }
 
         // Just for sanity check for exercise, you can comment this out
