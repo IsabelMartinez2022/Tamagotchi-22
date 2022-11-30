@@ -30,7 +30,7 @@
 char csv[80], *token;
 const char s[2] = ",";
 char command_to_send[30];
-char sendingStates[10];
+//char sendingStates[10];
 
 typedef struct {
    uint8_t ax[8];
@@ -58,13 +58,12 @@ uint8_t uartBuffer[30];
 enum state { WAITING=1, DATA_READY, READ_DATA, SELECT_BUTTON};
 enum state programState = WAITING;
 
-//Defect awake_mode
-enum myState {EAT_MODE, EXERCISE_MODE, PET_MODE, SLEEP_MODE};
-enum myState petState; //used for jukebox
+enum myState {AWAKE_MODE, SLEEP_MODE}; //used for jukebox
+enum myState petState= AWAKE_MODE; //awake_mode by defect
 
 //FLAG
-enum state{SEND, READING, DETECT};
-enum state sendingStates;
+enum msgState {SEND, READING, DETECT};
+enum msgState sendingStates;
 
 // Global variable for ambient light
 double ambientLight = -1000.0;
@@ -158,6 +157,8 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
 
     mpu9250_setup(&i2cMPU);
 
+    //poner los data como float
+
     System_printf("MPU9250: Setup and calibration OK\n");
     System_flush();
     while (1) {
@@ -167,21 +168,21 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
             mpu9250_get_data(&i2cMPU, &acc.ax, &acc.ay, &acc.az, &gyro.gx, &gyro.gy, &gyro.gz);
             if(acc.ax > 0.1){
                // command_to_send[0]='id: /*sensor id*/, EAT,2';
-                strcpy(command_to_send, "id: 2401, EAT, 2");
+                strcpy(command_to_send, "id: 2401, EAT: 2");
                 strcpy(sendingStates, "SEND");
                 sprintf(print_msg, "Current State %s\n", sendingStates);
                 System_printf(print_msg);
 
             }else if(acc.ay > 0.1){
 
-                strcpy(command_to_send, "id: 2401, PET, 2");
+                strcpy(command_to_send, "id: 2401, PET: 2");
                 strcpy(sendingStates, "SEND");
                 sprintf(print_msg, "Current State %s\n", sendingStates);
                 System_printf(print_msg);
 
             }else if(acc.az >0.1){
 
-                strcpy(command_to_send, "id: 2401, EXCERCISE, 2");
+                strcpy(command_to_send, "id: 2401, EXCERCISE: 2");
                 strcpy(sendingStates, "SEND");
                 sprintf(print_msg, "Current State %s\n", sendingStates);
                 System_printf(print_msg);
@@ -237,7 +238,6 @@ void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
 
             // Save the sensor value into the global variable. Remember to modify state
             ambientLight = lux;
-            programState = DATA_READY;
 
             for (int i=0; i<10;i++){
                 ambientLight+= ambientLight;
@@ -249,10 +249,8 @@ void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
                 petState= SLEEP_MODE;
             }
 
-            //turn it off
-            //sendingStates =  SEND;
-
             I2C_close(i2c);
+            programState = DATA_READY;
         }
 
         // Just for sanity check for exercise, you can comment this out
@@ -263,7 +261,7 @@ void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
 }
 
 /* Shut Function */
-void shutFxn(PIN_Handle handle, PIN_Id pinId) {
+void shutFxn() {
    PINCC26XX_setWakeup(buttonShut);
    Power_shutdown(NULL,0);
 }
@@ -283,7 +281,7 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
     uartParams.readDataMode = UART_DATA_TEXT;
     uartParams.baudRate = 9600;
     uartParams.readMode = UART_MODE_CALLBACK;
-    //uartParams.readCallback = &uartFxn;
+    uartParams.readCallback = &uartFxn;
     uartParams.dataLength = UART_LEN_8;
     uartParams.parityType = UART_PAR_NONE;
     uartParams.stopBits = UART_STOP_ONE;
@@ -316,7 +314,7 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
     }
 }
 
-/*UART Function AmbientLight*/
+/*UART Function AmbientLight (unnecessary)*/
 
 void UARTAmbientLight (UART_Handle uart, UART_Params uartParams){
 
@@ -327,7 +325,7 @@ void UARTAmbientLight (UART_Handle uart, UART_Params uartParams){
     programState = WAITING;
     sprintf(echo_msg,"Received: %.3f\n\r",ambientLight);
 
-    UART_write(uart, echo_msg, strlen(echo_msg));
+    UART_write(uart, echo_msg, strlen(echo_msg)+1);
 }
 
 //EXTRA
@@ -335,35 +333,20 @@ void UARTAmbientLight (UART_Handle uart, UART_Params uartParams){
 void buttonFxn(PIN_Handle handle, PIN_Id pinId) {
 
     //?
-    programState = SELECT_BUTTON;
     if(programState == WAITING){
-        PIN_setOutputValue(ledHandle, Board_LED0, 0 );
-        programState = DATA_READY;
-    }else{
-        PIN_setOutputValue(ledHandle, Board_LED0, 1 );
-        programState = WAITING;
-    }
+            PIN_setOutputValue(ledHandle, Board_LED0, 0 );
+            programState = DATA_READY;
+        }else{
+            PIN_setOutputValue(ledHandle, Board_LED0, 1 );
+            programState = WAITING;
+        }
+    programState = SELECT_BUTTON;
 }
 
 /* Buzz Function */
-
-void simpleBuzzFxn(UArg arg0, UArg arg1) {
-
-  while (1) {
-      if (programState==SELECT_BUTTON){
-          buzzerOpen(hBuzzer);
-          buzzerSetFrequency(2000);
-          Task_sleep(50000 / Clock_tickPeriod);
-          buzzerClose();
-      }
-      programState= READ_DATA;
-      Task_sleep(950000 / Clock_tickPeriod);
-  }
-}
-
 /* Jukebox Function */
 
-void jukeboxBuzzFxn(UArg arg0, UArg arg1){
+void buzzerTaskFxn(UArg arg0, UArg arg1){
 
     while (1) {
         if (petState== SLEEP_MODE){
@@ -373,7 +356,7 @@ void jukeboxBuzzFxn(UArg arg0, UArg arg1){
         buzzerSetFrequency(0);
         Task_sleep(20000 / Clock_tickPeriod);
         buzzerSetFrequency(512);
-        Task_sleep(50000 / Clock_tickPeriod););
+        Task_sleep(50000 / Clock_tickPeriod);
         buzzerSetFrequency(0);
         Task_sleep(20000 / Clock_tickPeriod);
         buzzerSetFrequency(590);
@@ -381,11 +364,24 @@ void jukeboxBuzzFxn(UArg arg0, UArg arg1){
         buzzerSetFrequency(0);
         Task_sleep(20000 / Clock_tickPeriod);
         buzzerClose();
+        //Calling shutdown
+        shutFxn();
+        return 0;
+        }
+        if(programState == SELECT_BUTTON){
+            buzzerOpen(hBuzzer);
+            buzzerSetFrequency(2000);
+            Task_sleep(50000 / Clock_tickPeriod);
+            buzzerClose();
+            programState= READ_DATA;
+        }else if(programState == ){ //añadir el estado de leer backend
+            buzzerOpen(hBuzzer);
+            buzzerSetFrequency(2000);
+            Task_sleep(50000 / Clock_tickPeriod);
+            buzzerClose();
         }
         Task_sleep(950000 / Clock_tickPeriod);
-        //Calling shutdown
-        shutFxn(hButtonShut,Board_BUTTON1);
-      }
+     }
 }
 
 Int main(void) {

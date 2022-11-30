@@ -504,14 +504,14 @@ void mpu9250_get_data(I2C_Handle *i2c, float *ax, float *ay, float *az, float *g
 
 	// JTKJ: Convert the 8-bit values (the _h and _l registers) in the array rawData into 16-bit values
 
-	//Cogemos el rawData y lo metemos en el init16 (array) mediante op. bitwise
-	values[0] = (rawData[0] |rawData[1]);
-	values[1] = (rawData[2] |rawData[3]);
-	values[2] = (rawData[4] |rawData[5]);
-	values[3] = (rawData[6] |rawData[7]);
-	values[4] = (rawData[8] |rawData[9]);
-	values[5] = (rawData[10] |rawData[11]);
-	values[6] = (rawData[12] |rawData[13]);
+	//Cogemos el rawData y lo metemos en el init16 (array) mediante op. bitwise 8izqda
+	values[0] = (rawData[0] <<8 |rawData[1]);
+	values[1] = (rawData[2] <<8|rawData[3]);
+	values[2] = (rawData[4] <<8|rawData[5]);
+	values[3] = (rawData[6] <<8|rawData[7]);//temperatura
+	values[4] = (rawData[8] <<8|rawData[9]);
+	values[5] = (rawData[10] <<8|rawData[11]);
+	values[6] = (rawData[12] <<8|rawData[13]);
 
 	
 	// JTKJ: Convert the 16-bit register values into g 
@@ -519,12 +519,6 @@ void mpu9250_get_data(I2C_Handle *i2c, float *ax, float *ay, float *az, float *g
 	*ax = (float)values[0]*aRes - accelBias[0];
 	*ay = (float)values[1]*aRes - accelBias[1];
 	*az = (float)values[2]*aRes - accelBias[2];
-
-	//como calcular la media de los valores de aceleración y threshold. if?
-	if (((*ax + *ay + *az)/ 3) > 15)  {
-	        System_printf("MPU9250: Acceleration reading average over 15G\n");
-	        System_flush();
-	 }
 
 	// JTKJ: Convert g values mx, my, mz into degrees per second
 	*gx = (float)values[4]*gRes;
