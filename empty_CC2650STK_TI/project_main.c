@@ -30,6 +30,8 @@
 /*Global variables*/
 char csv[80], *token;
 const char s[2] = ",";
+char command_to_send[30];
+char sendingStates[10];
 
 typedef struct{
     char name[12];
@@ -67,7 +69,10 @@ enum state { WAITING=1, DATA_READY, READ_DATA, SELECT_BUTTON};
 enum state programState = WAITING;
 enum myState {EAT_MODE, EXERCISE_MODE, PET_MODE, SLEEP_MODE};
 enum myState petState;
-int flag;
+
+//FLAG
+enum state{SEND, READING, DETECT};
+enum state sendingStates;
 
 // Global variable for ambient light
 double ambientLight = -1000.0;
@@ -176,29 +181,16 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
         // Print out sensor data as string to debug window if the state is correct
         // Remember to modify state
 
-        if (flag){
-            UART_read(uart, uartBuffer, 1);
-            flag=0;
+        string_compare=strcmp(sendingState, "SEND");
+
+        if (string_compare==0){
+            UART_write(uart,command_to_send, strlen(command_to_send)+1);
+            Task_sleep(100000 / Clock_tickPeriod);
+            strcpy(sendingState, "DETECT");
         }
 
-        if(DATA_READY){
-            /*char string[50];
-            sprintf(string,"%.3f", ambientLight);
-            System_printf(string);
-            programState = WAITING;*/
-
-            UARTAmbientLight(uart,uartParams);
-            UARTAccGyro(uart,uartParams);
-
-        // Send the same sensor data string with UART
-        //UART_read(uart, &input, 1);
-        /*sprintf(echo_msg,"Received: %.3f\n\r",ambientLight);
-
-        UART_write(uart, echo_msg, strlen(echo_msg));*/
-    }
-
         // Just for sanity check for exercise, you can comment this out
-        System_printf(" uartTask\n");
+       // System_printf(" uartTask\n");
         System_flush();
 
         // Once per second, you can modify this
@@ -206,7 +198,7 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
     }
 }
 
-/* Tamagotchi Task */
+/* Tamagotchi Task - the sensor task */
 
 void TamagotchiTask(UArg arg0, UArg arg1){
 
@@ -380,25 +372,20 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
         if (programState==READ_DATA){
            // MPU ask data
             mpu9250_get_data(&i2cMPU, &acc.ax, &acc.ay, &acc.az, &gyro.gx, &gyro.gy, &gyro.gz);
+            if(acc.ax > 0.1){
+               // command_to_send[0]='id: /*sensor id*/, EAT,2';
+                strcpy(command_to_send, "id: /*sensor id*/, EAT,2");
+                strcpy(sendingStates, "SEND");
+                sprintf(print_msg, "Current State %s\n", sendingStates);
+                System_printf(print_msg);
+            }
             char string[50];
-            sprintf(string,"%d", acc.ax);
-            System_printf(string);
-            sprintf(string,"%d", acc.ay);
-            System_printf(string);
-            sprintf(string,"%d", acc.az);
-            System_printf(string);
-            sprintf(string,"%d", gyro.gx);
-            System_printf(string);
-            sprintf(string,"%d", gyro.gy);
-            System_printf(string);
-            sprintf(string,"%d", gyro.gz);
+            sprintf(string,"%d, %d, %d, %d, %d, %d", acc.ax, acc.ay, acc.az, gyro.gx, gyro.gy, gyro.gz);
             System_printf(string);
         }
 
-        // TODO programState==WAITING cuando detecta 15 samples
-
        // Sleep 100ms
-
+        System_flush();
         Task_sleep(100000 / Clock_tickPeriod);
     }
 
