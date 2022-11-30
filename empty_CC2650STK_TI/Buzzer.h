@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2016, Texas Instruments Incorporated
  * All rights reserved.
@@ -37,8 +38,9 @@
  *
  *  ============================================================================
  */
-#ifndef _BUZZER_H_
-#define _BUZZER_H_
+
+#ifndef BUZZER_H_
+#define BUZZER_H_
 /* -----------------------------------------------------------------------------
 *                                          Includes
 * ------------------------------------------------------------------------------
@@ -60,4 +62,4 @@ void buzzerOpen(PIN_Handle hPinGpio);
 bool buzzerSetFrequency(uint16_t frequency);
 void buzzerClose(void);
 
-#endif
+#endif /* BUZZER_H_ */

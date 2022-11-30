@@ -26,7 +26,7 @@
 //#include "wireless/comm_lib.h"
 #include "sensors/opt3001.h"
 #include "sensors/mpu9250.h"
-#include "Buzzer.h"
+#include "buzzer.c"
 
 /*Global variables*/
 char csv[80], *token;
@@ -167,6 +167,7 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
 
     float ax,ay,az,gx,gy,gz;
     char print_msg[50];
+    char string[50];
 
     //I2C_Transaction i2cMessage;
     I2C_Handle i2cMPU;
@@ -209,7 +210,7 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
 
            /* Hacemos un movimiento horizontal para dar de comer al tamagotchi
             * Si el movimiento es vertical se le acaricia
-            * Si el movimiento es           hace ejercicio
+            * Si el movimiento es alante y atrás hace ejercicio
             * */
 
             if(ax > 0.1 && gx < 45 && programState == WAITING){
@@ -226,7 +227,7 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
                 sprintf(print_msg, "Vertical move %s\n", command_to_send);
                 System_printf(print_msg);
 
-            }else if(az >0.1 && gx<45 && programState == WAITING){
+            }else if(ay >0.1 && gx<45 && programState == WAITING){
 
                 strcpy(command_to_send, "id: 2401, EXCERCISE: 2");
                 programState = DATA_READY;
@@ -234,7 +235,7 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
                 System_printf(print_msg);
             }
 
-            char string[50];
+
             sprintf(string,"%d, %d, %d, %d, %d, %d", ax, ay, az, gx, gy, gz);
             System_printf(string);
         }
@@ -319,72 +320,55 @@ void shutFxn() {
 
 /*UART Functions*/
 
-/*UART Function to read the backend*/
-static void uartFxn(UART_Handle handle, void *rxBuf, size_t len){
-
-    if(programState==DATA_READY){
-            if(buffCount<BLENGTH){
-            strncat(uartStr, rxBuf,BLENGTH);
-            buffCount++;
-            }else if (buffCount<(BLENGTH*2)){
-                strncat(uartStr2, rxBuf,BLENGTH);
-                buffCount++;
-            }
-        }
-    UART_read(handle, rxBuf, 1);
-   // UART_read(uart, &input, 80);
-
-    sprintf(echo_msg, "Received: %s\n", input);
-
-    found = strContains(echo_msg, "2401,BEEP");
-    if(found){
-        System_print("My tamagotchi");
-        sprintf(echo_msg, "Received: %s\n", input);
-        System_print(echo_msg);
-
-        programState = WARNING_DYING;
-
-    }
-   System_printf(echo_msg);
-   return echo_msg;
-}
-
 /*UART SensorAccGyro Function */
 void uartTaskFxn(UArg arg0, UArg arg1) {
 
     UART_Handle uart;
     UART_Params uartParams;
 
+    char echo_msg[50];
+    char input[80];
+    int found;
+
     // Setup here UART connection as 9600,8n1
     UART_Params_init(&uartParams);
     uartParams.writeDataMode = UART_DATA_TEXT;
     uartParams.readDataMode = UART_DATA_TEXT;
     uartParams.baudRate = 9600;
-    uartParams.readMode = UART_MODE_CALLBACK;
-    uartParams.readCallback = &uartFxn; //TODO Function to read the backend
+    uartParams.readMode = UART_MODE_BLOCKING;
+   // uartParams.readCallback = &uartFxn;
     uartParams.dataLength = UART_LEN_8;
     uartParams.parityType = UART_PAR_NONE;
     uartParams.stopBits = UART_STOP_ONE;
 
-       uart = UART_open(Board_UART0, &uartParams);
+    uart = UART_open(Board_UART0, &uartParams);
 
-          if (uart == NULL) {
-             System_abort("Error opening the UART");
-          }
+    if (uart == NULL) {
+        System_abort("Error opening the UART");
+    }
 
     while (1) {
-
         // Print out sensor data as string to debug window if the state is correct
         // Remember to modify state
+        UART_read(uart, &input, 80);
+        sprintf(echo_msg, "Received: %s\n", input);
+        found = strContains(echo_msg, "2401,BEEP");
 
+        if(found){
+            System_print("My tamagotchi");
+            sprintf(echo_msg, "Received: %s\n", input);
+            System_print(echo_msg);
+            programState = WARNING_DYING;
+        }
+        System_printf(echo_msg);
 
-       if (programState==DATA_READY){
+        if (programState==DATA_READY){
             UART_write(uart,command_to_send, strlen(command_to_send)+1);
             Task_sleep(100000 / Clock_tickPeriod);
             programState = WAITING;
         }
 
-        // Just for sanity check for exercise, you can comment this out
+       // Just for sanity check for exercise, you can comment this out
        // System_printf(" uartTask\n");
         System_flush();
 

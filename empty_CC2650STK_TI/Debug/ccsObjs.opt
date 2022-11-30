@@ -1,4 +1,5 @@
 "./CC2650STK.obj"
+"./buzzer.obj"
 "./ccfg.obj"
 "./project_main.obj"
 "./sensors/bmp280.obj"
