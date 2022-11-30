@@ -125,93 +125,34 @@ static const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
     .pinSCL = Board_I2C0_SCL1
 };
 
+void buttonFxn(PIN_Handle handle, PIN_Id pinId) {
 
-void simpleBuzzFxn(UArg arg0, UArg arg1) {
-
-  while (1) {
-      //ESTADO PROVOCADO POR EL BUTTON??
-      if (programState==SELECT_BUTTON){
-    buzzerOpen(hBuzzer);
-    buzzerSetFrequency(2000);
-    Task_sleep(50000 / Clock_tickPeriod);
-    buzzerClose();
-      }
-    programState= READ_DATA;
-    Task_sleep(950000 / Clock_tickPeriod);
-  }
-
+    //?
+    programState = SELECT_BUTTON;
+    if(programState == WAITING){
+        PIN_setOutputValue(ledHandle, Board_LED0, 0 );
+        programState = DATA_READY;
+    }else{
+        PIN_setOutputValue(ledHandle, Board_LED0, 1 );
+        programState = WAITING;
+    }
 }
 
-void jukeboxBuzzFxn(UArg arg0, UArg arg1){
 
-    while (1) {
-        if (petState== SLEEP_MODE){
-        buzzerOpen(hBuzzer);
-        buzzerSetFrequency(660);
-        Task_sleep(50000 / Clock_tickPeriod);
-        buzzerSetFrequency(0);
-        Task_sleep(20000 / Clock_tickPeriod);
-        buzzerSetFrequency(512);
-        Task_sleep(50000 / Clock_tickPeriod););
-        buzzerSetFrequency(0);
-        Task_sleep(20000 / Clock_tickPeriod);
-        buzzerSetFrequency(590);
-        Task_sleep(50000 / Clock_tickPeriod);
-        buzzerSetFrequency(0);
-        Task_sleep(20000 / Clock_tickPeriod);
-        buzzerClose();
-        }
-        Task_sleep(950000 / Clock_tickPeriod);
-        //Calling shutdown
-        shutFxn(hButtonShut,Board_BUTTON1);
-      }
+/* Task Functions */
 
-}
-
-//function for shutting it down
+/* Shut Function */
 void shutFxn(PIN_Handle handle, PIN_Id pinId) {
    PINCC26XX_setWakeup(buttonShut);
    Power_shutdown(NULL,0);
 }
 
-//function for turning it on
-//NECESARIO?
-/*
-void wakeFxn(PIN_Handle handle, PIN_Id pinId) {
-   PINCC26XX_setWakeup(buttonWake);
-   //CALL JUKEBOX
-   Power_shutdown(NULL,0);
-}
-*/
-
-//?
-void buttonFxn(PIN_Handle handle, PIN_Id pinId) {
-
-    programState= SELECT_BUTTON;
-    //Blink either led of the device
-    //
-    /*
-    if(pinId == Board_BUTTON0) {
-        i++;
-    }
-    if(i > 3){
-        i=0;
-    }
-    uint_t pinValue = PIN_getOutputValue(Board_LED0);
-    pinValue = !pinValue;
-
-    PIN_setOutputValue(handle, Board_LED0, pinValue );
-    */
-}
-
-
-/* Task Functions */
+/* UART Function */
 void uartTaskFxn(UArg arg0, UArg arg1) {
 
     char echo_msg [30];
     UART_Handle uart;
     UART_Params uartParams;
-
 
     // Setup here UART connection as 9600,8n1
     UART_Params_init(&uartParams);
@@ -264,6 +205,8 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
         Task_sleep(100000 / Clock_tickPeriod);
     }
 }
+
+/* Tamagotchi Task */
 
 void TamagotchiTask(UArg arg0, UArg arg1){
 
@@ -319,12 +262,13 @@ void TamagotchiTask(UArg arg0, UArg arg1){
 
              // Accelerometer & Gyroscope values: ax,ay,az,gx,gy,gz.
 
-            //Creo que hace falta utilizar acc.ax y demás
+            //lookinto  acc.ax etc
             mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz);
             sprintf(mstr,"Acceleration: ax:%f, ay:%f, az:%f\n", ax,ay,az);
             System_printf(mstr);
             System_flush();
 
+            //lookinto  gyro.gx etc
             sprintf(mstr,"Gyroscope: gx:%f, gy:%f, gz:%f\n",gx,gy,gz);
             System_printf(mstr);
             System_flush();
@@ -346,9 +290,6 @@ void TamagotchiTask(UArg arg0, UArg arg1){
     }
 }
 
-//void UARTFxn para la llamada desde la interruption
-
-//ES INNECESARIO
 void UARTAmbientLight (UART_Handle uart, UART_Params uartParams){
 
     char string[50];
@@ -366,8 +307,6 @@ void UARTAccGyro (UART_Handle uart, UART_Params uartParams){
     //TODO (gráficas)
 
 }
-
-
 
 void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
 
@@ -392,17 +331,7 @@ void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
     Task_sleep(100000 / Clock_tickPeriod);
     opt3001_setup(&i2c);
 
-
-    // OPT3001 ASK AND SHOW DATA
-    //opt3001_get_data(&i2c, &lux);
-    //sprintf(bstr,"Brightness: %f Lux\n",lux);
-    //System_printf(bstr);
-    //System_flush();
-    //Task_sleep(2000000/Clock_tickPeriod);
-    //Display_clear(hDisplay);
-
     while (1) {
-
         if (programState==WAITING){
             // Read sensor data and print it to the Debug window as string
             lux = opt3001_get_data(&i2c);
@@ -427,7 +356,7 @@ void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
         }
 
         // Just for sanity check for exercise, you can comment this out
-        //System_printf(" sensorTask\n");
+        System_printf(" Ambient Light sensorTask\n");
         // System_flush();
         Task_sleep(1000000 / Clock_tickPeriod);
     }
@@ -437,8 +366,8 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
 
     accValues acc;
     gyroValues gyro;
-    //I2C_Transaction i2cMessage;
 
+    //I2C_Transaction i2cMessage;
     I2C_Handle i2cMPU;
     I2C_Params i2cMPUParams;
 
@@ -468,38 +397,82 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
 
     System_printf("MPU9250: Setup and calibration OK\n");
     System_flush();
+    while (1) {
 
-           while (1) {
-
-           if (programState==READ_DATA){
+        if (programState==READ_DATA){
            // MPU ask data
-           mpu9250_get_data(&i2cMPU, &acc.ax, &acc.ay, &acc.az, &gyro.gx, &gyro.gy, &gyro.gz);
-           char string[50];
-           sprintf(string,"%d", acc.ax);
-           System_printf(string);
-           sprintf(string,"%d", acc.ay);
-           System_printf(string);
-           sprintf(string,"%d", acc.az);
-           System_printf(string);
-           sprintf(string,"%d", gyro.gx);
-           System_printf(string);
-           sprintf(string,"%d", gyro.gy);
-           System_printf(string);
-           sprintf(string,"%d", gyro.gz);
-           System_printf(string);
-           }
-           //programState==WAITING cuando detecta 15 samples??
+            mpu9250_get_data(&i2cMPU, &acc.ax, &acc.ay, &acc.az, &gyro.gx, &gyro.gy, &gyro.gz);
+            char string[50];
+            sprintf(string,"%d", acc.ax);
+            System_printf(string);
+            sprintf(string,"%d", acc.ay);
+            System_printf(string);
+            sprintf(string,"%d", acc.az);
+            System_printf(string);
+            sprintf(string,"%d", gyro.gx);
+            System_printf(string);
+            sprintf(string,"%d", gyro.gy);
+            System_printf(string);
+            sprintf(string,"%d", gyro.gz);
+            System_printf(string);
+        }
 
-           // Sleep 100ms
-           Task_sleep(100000 / Clock_tickPeriod);
-           }
+        // TODOprogramState==WAITING cuando detecta 15 samples
 
-           // MPU close i2c
-           I2C_close(i2cMPU);
-           // MPU power off
-           PIN_setOutputValue(hMpuPin,Board_MPU_POWER, Board_MPU_POWER_OFF);
+       // Sleep 100ms
+
+        Task_sleep(100000 / Clock_tickPeriod);
+    }
+
+    // MPU close i2c
+    I2C_close(i2cMPU);
+
+    // MPU power off
+    PIN_setOutputValue(hMpuPin,Board_MPU_POWER, Board_MPU_POWER_OFF);
 }
 
+/* Buzz Function */
+
+void simpleBuzzFxn(UArg arg0, UArg arg1) {
+
+  while (1) {
+      if (programState==SELECT_BUTTON){
+          buzzerOpen(hBuzzer);
+          buzzerSetFrequency(2000);
+          Task_sleep(50000 / Clock_tickPeriod);
+          buzzerClose();
+      }
+      programState= READ_DATA;
+      Task_sleep(950000 / Clock_tickPeriod);
+  }
+}
+
+/* Jukebox Function */
+
+void jukeboxBuzzFxn(UArg arg0, UArg arg1){
+
+    while (1) {
+        if (petState== SLEEP_MODE){
+        buzzerOpen(hBuzzer);
+        buzzerSetFrequency(660);
+        Task_sleep(50000 / Clock_tickPeriod);
+        buzzerSetFrequency(0);
+        Task_sleep(20000 / Clock_tickPeriod);
+        buzzerSetFrequency(512);
+        Task_sleep(50000 / Clock_tickPeriod););
+        buzzerSetFrequency(0);
+        Task_sleep(20000 / Clock_tickPeriod);
+        buzzerSetFrequency(590);
+        Task_sleep(50000 / Clock_tickPeriod);
+        buzzerSetFrequency(0);
+        Task_sleep(20000 / Clock_tickPeriod);
+        buzzerClose();
+        }
+        Task_sleep(950000 / Clock_tickPeriod);
+        //Calling shutdown
+        shutFxn(hButtonShut,Board_BUTTON1);
+      }
+}
 
 Int main(void) {
 
