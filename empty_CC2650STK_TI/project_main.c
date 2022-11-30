@@ -112,9 +112,10 @@ PIN_Config ledConfig1[] = {
    PIN_TERMINATE
 };
 
-//Handle & state for the buzzer
+/*Handle & state for the buzzer
 static PIN_Handle hBuzzer;
 static PIN_State sBuzzer;
+*/
 
 PIN_Config cBuzzer[] = {
   Board_BUZZER | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
@@ -300,7 +301,7 @@ void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
                 petState= SLEEP_MODE;
             }
 
-            //cerramos el i2c para q se puedda utilizar el MPU
+            //cerramos el i2c para que se pueda utilizar el MPU
             I2C_close(i2c);
             programState = DATA_READY;
         }
