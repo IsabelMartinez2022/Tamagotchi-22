@@ -129,7 +129,7 @@ PIN_Config cBuzzer[] = {
 
 // MPU power pin global variables
 static PIN_Handle hMpuPin;
-static PIN_State  MpuPinState;
+static PIN_State MpuPinState;
 
 static const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
     .pinSDA = Board_I2C0_SDA1,
@@ -240,8 +240,6 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
                 sprintf(print_msg, "Current State %s\n", command_to_send);
                 System_printf(print_msg);
             }
-
-
             sprintf(string,"%d, %d, %d, %d, %d, %d", ax, ay, az, gx, gy, gz);
             System_printf(string);
         }
@@ -254,7 +252,6 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
     // MPU close i2c
     //We close the i2cMPU so it doesn't disturb the line of i2c of the sensor
     I2C_close(i2cMPU);
-
     // MPU power off
     PIN_setOutputValue(hMpuPin,Board_MPU_POWER, Board_MPU_POWER_OFF);
 }
