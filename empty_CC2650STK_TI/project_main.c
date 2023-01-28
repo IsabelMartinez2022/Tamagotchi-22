@@ -79,7 +79,7 @@ static const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
 //blink the LED connected to the pin Board_LED1 with a delay of 1 second
 void blink_led(){
     // configure the LED pin as output
-    PIN_Handle ledHandle = PIN_open(&ledPinState, pinTable);
+    PIN_Handle ledHandle = PIN_open(&ledPinState, ledConfig0);
     PIN_setOutputValue(ledHandle, Board_LED1, 0);
 
     // loop to blink the LED
@@ -192,7 +192,7 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
     uartParams.baudRate = 9600;
     uartParams.readMode = UART_MODE_BLOCKING;
     uartParams.readEcho = UART_ECHO_OFF;
-   // uartParams.readCallback = &uartFxn; Decided to use Blocking method
+    //uartParams.readCallback = &uartFxn; //Decided to use Blocking method
     uartParams.dataLength = UART_LEN_8;
     uartParams.parityType = UART_PAR_NONE;
     uartParams.stopBits = UART_STOP_ONE;
@@ -217,7 +217,6 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
         }
         System_printf(echo_msg);
 
-        // Comprueba esto
         if (programState==DATA_READY){
             UART_write(uart,command_to_send, strlen(command_to_send)+1);
             Task_sleep(100000 / Clock_tickPeriod);
