@@ -240,7 +240,7 @@ Int main(void) {
 
     // Task variables
     Task_Handle sensorTaskHandle1;
-    Task_Handle sensorTaskHandle2;
+    //Task_Handle sensorTaskHandle2;
     Task_Params sensorTaskParams;
 
     //UART Task variables
