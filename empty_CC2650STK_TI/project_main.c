@@ -79,7 +79,7 @@ static const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
 //blink the LED connected to the pin Board_LED1 with a delay of 1 second
 void blink_led(){
     // configure the LED pin as output
-    PIN_Handle ledHandle = PIN_open(&ledPinState, ledConfig0);
+    PIN_Handle ledHandle = PIN_open(&sLed, ledConfig0);
     PIN_setOutputValue(ledHandle, Board_LED1, 0);
 
     // loop to blink the LED
