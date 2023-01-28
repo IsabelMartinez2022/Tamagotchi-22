@@ -29,33 +29,15 @@ Nieves Núñez and Isabel Martínez
 /* Board Header files */
 #include "Board.h"
 //#include "wireless/comm_lib.h"
-//#include "sensors/opt3001.h"
+#include "sensors/opt3001.h"
 #include "sensors/mpu9250.h"
 //#include "buzzer.c"
+
 
 /*Global variables*/
 char csv[80], *token;
 const char s[2] = ",";
 char command_to_send[30];
-
-/*
- * Having the data as an array would be more manageable in order to know previous values
- * typedef struct {
-   uint8_t ax[8];
-   uint8_t ay[8];
-   uint8_t az[8];
-} accValues;
-
-typedef struct {
-   uint8_t gx[8];
-   uint8_t gy[8];
-   uint8_t gz[8];
-} gyroValues;
-*/
-
-/*May be used for loops
-int  i = 0, j = 0, k = 0, num = 0;
-*/
 
 /* Task */
 #define STACKSIZE 2048
@@ -69,44 +51,6 @@ uint8_t uartBuffer[30];
 enum state {WAITING=1, DATA_READY, READ_DATA, LED_ON};
 //SELECT_BUTTON and WARNING_DYING not needed for retake version
 enum state programState = WAITING;
-
-/*enum myState {AWAKE_MODE, SLEEP_MODE}; //used for jukebox
-enum myState petState= AWAKE_MODE; //awake_mode by defect
-*/
-
-// Global variable for ambient light, not implemented for the retake version
-//double ambientLight = -1000.0;
-
-
-//Pins RTOS-variables and configuration here
-//Buttons and leds handle state & configuration
-
-/*BUTTON SHUT*/
-/*
-static PIN_Handle hButtonShut;
-static PIN_State bStateShut;
-
-PIN_Config buttonShut[] = {
-   Board_BUTTON1 | PIN_INPUT_EN | PIN_PULLUP | PIN_IRQ_NEGEDGE,
-   PIN_TERMINATE
-};
-
-PIN_Config buttonWake[] = {
-   Board_BUTTON1 | PIN_INPUT_EN | PIN_PULLUP | PINCC26XX_WAKEUP_NEGEDGE,
-   PIN_TERMINATE
-};
-*/
-
-/*BUTTON SELECT*/
-/*
-static PIN_Handle hButtonSelect;
-static PIN_State bStateSelect;
-
-PIN_Config buttonConfig[] = {
-   Board_BUTTON0 | PIN_INPUT_EN | PIN_PULLUP | PIN_IRQ_NEGEDGE,
-   PIN_TERMINATE
-};
-*/
 
 /*LEDS*/
 
@@ -123,17 +67,6 @@ PIN_Config ledConfig1[] = {
    PIN_TERMINATE
 };
 
-/*Handle & state for the buzzer
-static PIN_Handle hBuzzer;
-static PIN_State sBuzzer;
-
-PIN_Config cBuzzer[] = {
-  Board_BUZZER | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
-  PIN_TERMINATE
-};
-*/
-
-
 // MPU power pin global variables
 static PIN_Handle hMpuPin;
 static PIN_State MpuPinState;
@@ -143,36 +76,20 @@ static const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
     .pinSCL = Board_I2C0_SCL1
 };
 
+//blink the LED connected to the pin Board_LED1 with a delay of 1 second
+void blink_led(){
+    // configure the LED pin as output
+    PIN_Handle ledHandle = PIN_open(&ledPinState, pinTable);
+    PIN_setOutputValue(ledHandle, Board_LED1, 0);
 
-/*External code function, not used*/
-/*
-uint8_t strContains(char* string, char* toFind)
-{
-    uint8_t slen = strlen(string);
-    uint8_t tFlen = strlen(toFind);
-    uint8_t found = 0;
-    uint8_t s,t;
-
-    if( slen >= tFlen )
-    {
-        for(s=0, t=0; s<slen; s++)
-        {
-            do{
-                if( string[s] == toFind[t] )
-                {
-                    if( ++found == tFlen ) return 1;
-                    s++;
-                    t++;
-                }
-                else { s -= found; found=0; t=0; }
-
-              }while(found);
-        }
-        return 0;
+    // loop to blink the LED
+    while(1){
+        PIN_setOutputValue(ledHandle, Board_LED1, 1);
+        Task_sleep(1000000 / Clock_tickPeriod);
+        PIN_setOutputValue(ledHandle, Board_LED1, 0);
+        Task_sleep(1000000 / Clock_tickPeriod);
     }
-    else return -1;
 }
-*/
 
 
 /* Task Functions */
@@ -202,8 +119,10 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
     // MPU open i2c
     i2cMPU = I2C_open(Board_I2C, &i2cMPUParams);
     if (i2cMPU == NULL) {
-    System_abort("Error Initializing I2CMPU\n");
+        System_abort("Error Initializing I2CMPU\n");
     }
+
+    System_flush();
 
     // MPU setup and calibration
     System_printf("MPU9250: Setup and calibration...\n");
@@ -218,149 +137,41 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
     while (1) {
 
         if (programState==READ_DATA){
-           // MPU ask data
-
-            //TODO PREGUNTA: ya no necesitamos valores del gyroscope. Los dejamos en la función de todas formas?
+            // MPU ask data
             mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz);
 
-           /* Hacemos un movimiento horizontal para dar de comer al tamagotchi
-            * Si el movimiento es vertical se le acaricia
-            * Si el movimiento es alante y atrás hace ejercicio
-            * */
-
-            /* (command_to_send[0]='id: sensor id, EAT,2';)
-             *
-             *if(ax > 0.1 && gx < 45 && programState == WAITING){
-                strcpy(command_to_send, "id: 2401, EAT: 2");
+            if(ax > 1.3 || ax < -1.3){
+                sendToUART(command_to_send, "id:2401,MSG1:right,ping");
                 programState = DATA_READY;
                 sprintf(print_msg, "Horizontal move %s\n", command_to_send);
                 System_printf(print_msg);
-
-            }else if(ay > 0.1 && gx<45 && programState == WAITING){
-
-                strcpy(command_to_send, "id: 2401, PET: 2");
-                programState = DATA_READY;
-                sprintf(print_msg, "Vertical move %s\n", command_to_send);
-                System_printf(print_msg);
-
-            }else if(ay >0.1 && gx<45 && programState == WAITING){
-
-                strcpy(command_to_send, "id: 2401, EXCERCISE: 2");
-                programState = DATA_READY;
-                sprintf(print_msg, "Current State %s\n", command_to_send);
-                System_printf(print_msg);
-            }
-            sprintf(string,"%d, %d, %d, %d, %d, %d", ax, ay, az, gx, gy, gz);
-            System_printf(string);
-            */
-
-            if(ax > 1.3 || ax < -1.3){
-            strcpy(command_to_send, "id:2401,MSG1:left-right,ping");
-            programState = DATA_READY;
-            sprintf(print_msg, "Horizontal move %s\n", command_to_send);
-            System_printf(print_msg);
             }
 
             else if (ay> 1.3 || ay < -1.3){
-            strcpy(command_to_send, "id:2401,MSG1:up-down,ping");
-            programState = DATA_READY;
-            sprintf(print_msg, "Vertical move %s\n", command_to_send);
-            System_printf(print_msg);
+                sendToUART(command_to_send, "id:2401,MSG1:up,ping");
+                programState = DATA_READY;
+                sprintf(print_msg, "Vertical move %s\n", command_to_send);
+                System_printf(print_msg);
             }
 
             else if (az> 1.3 || az < -1.3){
-            strcpy(command_to_send, "id:2401,MSG1:front-back,ping");
-            programState = DATA_READY;
-            sprintf(print_msg, "Cross move %s\n", command_to_send);
-            System_printf(print_msg);
+                sendToUART(command_to_send, "id:2401,MSG1:top,ping");
+                programState = DATA_READY;
+                sprintf(print_msg, "Cross move %s\n", command_to_send);
+                System_printf(print_msg);
             }
-            //I2C_close?
         }
 
        // Sleep 100ms
         System_flush();
         Task_sleep(100000 / Clock_tickPeriod);
     }
-
-    //TODO PREGUNTA: no debería ir antes del system_flush()?
     // MPU close i2c
     //We close the i2cMPU so it doesn't disturb the line of i2c of the sensor
     I2C_close(i2cMPU);
     // MPU power off
     PIN_setOutputValue(hMpuPin,Board_MPU_POWER, Board_MPU_POWER_OFF);
 }
-
-
-/*No longer implemented for the retake version
- *
-void sensorTaskAmbientLight(UArg arg0, UArg arg1) {
-
-    //local variable
-    double lux;
-
-    //I2C_Transaction i2cMessage;
-
-    I2C_Handle i2c;
-    I2C_Params i2cParams;
-
-    // Open the i2c bus
-    I2C_Params_init(&i2cParams);
-    i2cParams.bitRate = I2C_400kHz;
-    i2c = I2C_open(Board_I2C_TMP, &i2cParams);
-
-    if (i2c == NULL) {
-        System_abort("Error Initializing I2C\n");
-    }
-
-    //Setup the OPT3001 sensor for use
-    //Before calling the setup function, insert 100ms delay with Task_sleep
-    Task_sleep(100000 / Clock_tickPeriod);
-
-    //configure the light
-    opt3001_setup(&i2c);
-
-    while (1) {
-        if (programState==WAITING){
-            // Read sensor data and print it to the Debug window as string
-            lux = opt3001_get_data(&i2c);
-            char string[50];
-            sprintf(string,"%f", lux);
-            System_printf(string);
-
-            // Save the sensor value into the global variable. Remember to modify state
-            ambientLight = lux;
-
-            //Hacemos la media de los primeros 10 valores que coge el sensor, si son menores que 1 pasamos al estado de dormir
-
-            for (i=0; i<10;i++){
-                ambientLight+= ambientLight;
-            }
-            ambientLight= ambientLight/10;
-            if (ambientLight<1){
-                petState= SLEEP_MODE;
-            }
-
-            //cerramos el i2c para que se pueda utilizar el MPU
-            I2C_close(i2c);
-            programState = DATA_READY;
-        }
-
-        // Just for sanity check for exercise, you can comment this out
-        System_printf(" Ambient Light sensorTask\n");
-        System_flush();
-        Task_sleep(1000000 / Clock_tickPeriod);
-    }
-}
-*/
-
-/* Shut Function */
-/*
-void shutFxn() {
-   PINCC26XX_setWakeup(buttonShut);
-   Power_shutdown(NULL,0);
-}
-*/
-
 
 /*UART Functions*/
 
@@ -380,12 +191,11 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
     uartParams.readDataMode = UART_DATA_TEXT;
     uartParams.baudRate = 9600;
     uartParams.readMode = UART_MODE_BLOCKING;
+    uartParams.readEcho = UART_ECHO_OFF;
    // uartParams.readCallback = &uartFxn; Decided to use Blocking method
     uartParams.dataLength = UART_LEN_8;
     uartParams.parityType = UART_PAR_NONE;
     uartParams.stopBits = UART_STOP_ONE;
-
-    //TODO hacer time-out (?)
 
     uart = UART_open(Board_UART0, &uartParams);
 
@@ -403,20 +213,23 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
             sprintf(echo_msg, "Received: %s\n", input);
             System_printf(echo_msg);
             programState = LED_ON;
-            //TODO: encender LED
+            blink_led();
         }
         System_printf(echo_msg);
 
-        //TODO PREGUNTA: esto funcionaba bien?
+        // Comprueba esto
         if (programState==DATA_READY){
             UART_write(uart,command_to_send, strlen(command_to_send)+1);
             Task_sleep(100000 / Clock_tickPeriod);
+            programState = LED_ON;
+            blink_led();
+        }
+        else if (programState == LED_ON) {
+            blink_led();
+            Task_sleep(1000000 / Clock_tickPeriod);
             programState = WAITING;
-            //TODO chequear estados
         }
 
-       // Just for sanity check for exercise, you can comment this out
-       // System_printf(" uartTask\n");
         System_flush();
 
         // Once per second, you can modify this
@@ -424,94 +237,6 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
     }
 }
 
-/*UART Function AmbientLight*/
-/*
-void UARTAmbientLight (UART_Handle uart, UART_Params uartParams){
-
-    char string[50];
-    char echo_msg [30];
-    sprintf(string,"%.3f", ambientLight);
-    System_printf(string);
-    programState = WAITING;
-    sprintf(echo_msg,"Received: %.3f\n\r",ambientLight);
-
-    UART_write(uart, echo_msg, strlen(echo_msg)+1);
-}
-*/
-
-//EXTRA
-/*
-void buttonFxn(PIN_Handle handle, PIN_Id pinId) {
-
-    if(programState == WAITING){
-        PIN_setOutputValue(hLed, Board_LED0, 0 );
-        programState = DATA_READY;
-    }else{
-        PIN_setOutputValue(hLed, Board_LED0, 1 );
-        programState = WAITING;
-    }
-    programState = SELECT_BUTTON;
-}
-*/
-
-/* Buzz Function */
-/* Jukebox Function */
-/* Functions are commented because of the #10056 error: symbol buzzerOpen redefined: first defined in
- * "./buzzer.obj"; redefined in "./project_main.obj"
- *
-void buzzerTaskFxn(UArg arg0, UArg arg1){
-
-    while (1) {
-        if (petState== SLEEP_MODE){
-        buzzerOpen(hBuzzer);
-        buzzerSetFrequency(660);
-
-        Task_sleep(50000 / Clock_tickPeriod);
-        buzzerSetFrequency(0);
-        Task_sleep(20000 / Clock_tickPeriod);
-        buzzerSetFrequency(512);
-        Task_sleep(50000 / Clock_tickPeriod);
-        buzzerSetFrequency(0);
-        Task_sleep(20000 / Clock_tickPeriod);
-        buzzerSetFrequency(590);
-        Task_sleep(50000 / Clock_tickPeriod);
-        buzzerSetFrequency(0);
-        Task_sleep(20000 / Clock_tickPeriod);
-        buzzerClose();
-
-        //Calling shutdown
-        shutFxn();
-
-        return 0;
-
-        }
-        if(programState == SELECT_BUTTON){
-            buzzerOpen(hBuzzer);
-
-            buzzerSetFrequency(2000);
-            Task_sleep(50000 / Clock_tickPeriod);
-
-            buzzerClose();
-
-            programState= READ_DATA;
-        }else if(programState == WARNING_DYING){ //añadir el estado de leer backend
-
-            buzzerOpen(hBuzzer);
-            buzzerSetFrequency(3000);
-
-            Task_sleep(20000 / Clock_tickPeriod);
-            buzzerSetFrequency(0);
-            Task_sleep(10000 / Clock_tickPeriod);
-            buzzerSetFrequency(3000);
-            Task_sleep(20000 / Clock_tickPeriod);
-            buzzerSetFrequency(0);
-            Task_sleep(10000 / Clock_tickPeriod);
-            buzzerClose();
-        }
-        Task_sleep(100000 / Clock_tickPeriod);
-     }
-}
-*/
 Int main(void) {
 
     // Task variables
@@ -523,15 +248,6 @@ Int main(void) {
     Task_Handle uartTaskHandle;
     Task_Params uartTaskParams;
 
-    //Buzzer Task variables & init
-    /*
-    Task_Handle buzzerTaskHandle;
-    Task_Params buzzerTaskParams;
-    hBuzzer = PIN_open(&sBuzzer, cBuzzer);
-    if (!hBuzzer) {
-        System_abort("Error initializing buzzer pins\n");
-    }
-*/
     // Initialize board
     Board_initGeneral();
 
@@ -543,31 +259,16 @@ Int main(void) {
     // Open the shut/woke button and led pins
     // Remember to register the above interrupt handler for button
 
-    /*
-    hButtonSelect = PIN_open(&bStateSelect, buttonConfig);
-    if(!hButtonSelect) {
-        System_abort("Error initializing button pins\n");
-    }
-
-    if (PIN_registerIntCb(hButtonSelect, &buttonFxn) != 0) {
-        System_abort("Error registering button select callback function");
-    }
-
-    hButtonShut = PIN_open(&bStateShut, buttonShut);
-    if(!hButtonShut) {
-        System_abort("Error initializing button shut pins\n");
-    }
-    */
-
     hLed = PIN_open(&sLed, ledConfig0);
     if(!hLed) {
         System_abort("Error initializing LED pins\n");
     }
 
-    hLed = PIN_open(&sLed, ledConfig1);
-    if(!hLed) {
-        System_abort("Error initializing LED pins\n");
-    }
+    // creo q esta segunda llamada a PIN_open() es innecesaria.
+    // hLed = PIN_open(&sLed, ledConfig1);
+    // if(!hLed) {
+    //     System_abort("Error initializing LED pins\n");
+    // }
 
 
     /* Sensor Task */
@@ -578,21 +279,8 @@ Int main(void) {
     sensorTaskHandle1 = Task_create(sensorTaskAccGyro, &sensorTaskParams, NULL);
 
     if (sensorTaskHandle1 == NULL) {
-        System_abort("Task create failed!");
+        System_abort("Task create failed failed for sensorTaskAccGyro!");
     }
-
-    /* AmbientLight Task */
-    /*
-    Task_Params_init(&sensorTaskParams);
-        sensorTaskParams.stackSize = STACKSIZE;
-        sensorTaskParams.stack = &sensorTaskStack;
-        sensorTaskParams.priority=2;
-        sensorTaskHandle2 = Task_create(sensorTaskAmbientLight, &sensorTaskParams, NULL);
-
-    if (sensorTaskHandle2 == NULL) {
-        System_abort("Task create failed!");
-    }
-    */
 
     /* Uart Task */
 
@@ -603,35 +291,8 @@ Int main(void) {
     uartTaskHandle = Task_create(uartTaskFxn, &uartTaskParams, NULL);
 
     if (uartTaskHandle == NULL) {
-        System_abort("Task create failed!");
+        System_abort("Task create failed for uartTaskFxn!");
     }
-
-    /*UARTAmbientLight*/
-    /*
-    Task_Params_init(&uartTaskParams);
-    uartTaskParams.stackSize = STACKSIZE;
-    uartTaskParams.stack = &uartTaskStack;
-    uartTaskParams.priority=2;
-    uartTaskHandle = Task_create(UARTAmbientLight, &uartTaskParams, NULL);
-
-    if (uartTaskHandle == NULL) {
-        System_abort("Task create failed!");
-    }
-    */
-
-    /*EXTRA*/
-
-    /* Buzzer Task */
-/*
-        Task_Params_init(&buzzerTaskParams);
-        uartTaskParams.stackSize = STACKSIZE;
-        uartTaskParams.stack = &buzzerTaskStack;
-        uartTaskParams.priority=2;
-        //uartTaskHandle = Task_create(buzzerTaskFxn, &buzzerTaskParams, NULL);
-
-        if (buzzerTaskHandle == NULL) {
-            System_abort("Task create failed!");
-        }*/
 
     /* Sanity check */
     System_printf("Hello world!\n");
