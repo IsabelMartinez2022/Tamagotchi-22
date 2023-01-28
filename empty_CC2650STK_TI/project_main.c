@@ -104,6 +104,9 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
     I2C_Handle i2cMPU;
     I2C_Params i2cMPUParams;
 
+    int i=0;
+    char print_msg[30];
+
     I2C_Params_init(&i2cMPUParams);
     i2cMPUParams.bitRate = I2C_400kHz;
     i2cMPUParams.custom = (uintptr_t)&i2cMPUCfg;
@@ -133,13 +136,16 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
 
     System_printf("MPU9250: Setup and calibration OK\n");
     System_flush();
+    Task_sleep(1000000 / Clock_tickPeriod);
 
     while (1) {
 
+        //EN QUE MOMENTO ESTAMOS PONIENDO EL PROGRAMA A READ DATA PARA QUE COMIENCE?
         if (programState==READ_DATA){
             // MPU ask data
             mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz);
 
+            //NO ENTIENDO MSG1:right,ping NO DEBERIA SER: EAT/PET/EXERCISE:1
             if(ax > 1.3 || ax < -1.3){
                 sendToUART(command_to_send, "id:2401,MSG1:right,ping");
                 programState = DATA_READY;
@@ -207,21 +213,22 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
         // Print out sensor data as string to debug window if the state is correct
         // Remember to modify state
         UART_read(uart, &input, 80);
-        found = strstr(input, "pong");
+        sprintf(echo_msg,"Received:%s\n",input);
+        found=strContains(echo_msg, "2401,BEEP");
 
         if(found!= NULL){
             sprintf(echo_msg, "Received: %s\n", input);
             System_printf(echo_msg);
-            programState = LED_ON;
-            blink_led();
+            found=strContains(echo_msg, ":Too late");
+            if(found){
+                System_printf("Tamagotchi Ran Away");
+                blink_led();
+            }
         }
-        System_printf(echo_msg);
-
         if (programState==DATA_READY){
             UART_write(uart,command_to_send, strlen(command_to_send)+1);
-            Task_sleep(100000 / Clock_tickPeriod);
+            System_printf("Sent Command To |%s| Sensor Tag\n",command_to_send);
             programState = LED_ON;
-            blink_led();
         }
         else if (programState == LED_ON) {
             blink_led();
@@ -239,8 +246,7 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
 Int main(void) {
 
     // Task variables
-    Task_Handle sensorTaskHandle1;
-    //Task_Handle sensorTaskHandle2;
+    Task_Handle sensorTaskHandle;
     Task_Params sensorTaskParams;
 
     //UART Task variables
@@ -256,33 +262,24 @@ Int main(void) {
     Board_initUART();
 
     // Open the shut/woke button and led pins
-    // Remember to register the above interrupt handler for button
 
     hLed = PIN_open(&sLed, ledConfig0);
     if(!hLed) {
         System_abort("Error initializing LED pins\n");
     }
 
-    // creo q esta segunda llamada a PIN_open() es innecesaria.
-    // hLed = PIN_open(&sLed, ledConfig1);
-    // if(!hLed) {
-    //     System_abort("Error initializing LED pins\n");
-    // }
-
-
     /* Sensor Task */
     Task_Params_init(&sensorTaskParams);
     sensorTaskParams.stackSize = STACKSIZE;
     sensorTaskParams.stack = &sensorTaskStack;
     sensorTaskParams.priority=2;
-    sensorTaskHandle1 = Task_create(sensorTaskAccGyro, &sensorTaskParams, NULL);
+    sensorTaskHandle = Task_create(sensorTaskAccGyro, &sensorTaskParams, NULL);
 
-    if (sensorTaskHandle1 == NULL) {
+    if (sensorTaskHandle == NULL) {
         System_abort("Task create failed failed for sensorTaskAccGyro!");
     }
 
     /* Uart Task */
-
     Task_Params_init(&uartTaskParams);
     uartTaskParams.stackSize = STACKSIZE;
     uartTaskParams.stack = &uartTaskStack;
