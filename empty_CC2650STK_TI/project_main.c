@@ -98,6 +98,7 @@ void blink_led(){
 void sensorTaskAccGyro (UArg arg0, UArg arg1) {
 
     float ax,ay,az,gx,gy,gz;
+    char print_msg[50];
 
     //I2C_Transaction i2cMessage;
     I2C_Handle i2cMPU;
