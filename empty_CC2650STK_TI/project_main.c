@@ -39,6 +39,7 @@ char csv[80], *token;
 const char s[2] = ",";
 char command_to_send[30];
 
+
 /* Task */
 #define STACKSIZE 2048
 Char sensorTaskStack[STACKSIZE];
@@ -47,10 +48,13 @@ Char buzzerTaskStack[STACKSIZE];
 
 uint8_t uartBuffer[30];
 
-// Definition of the state machine for the flag
-enum state {WAITING=1, DATA_READY, READ_DATA, LED_ON};
+
+/*Definition of the state machine for the flag */
+enum state {DATA_READY, WAITING, LED_ON};
 //SELECT_BUTTON and WARNING_DYING not needed for retake version
-enum state programState = READ_DATA;
+//READ_DATA also not needed because we don't turn SensorTag on and off for retake version
+enum state programState = WAITING;
+
 
 /*LEDS*/
 
@@ -63,9 +67,9 @@ PIN_Config ledConfig0[] = {
 };
 
 
-// MPU power pin global variables
+/*MPU power pin global variables */
 static PIN_Handle hMpuPin;
-static PIN_State MpuPinState;
+//static PIN_State MpuPinState;
 
 static const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
     .pinSDA = Board_I2C0_SDA1,
@@ -73,7 +77,7 @@ static const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
 };
 
 
-//blink the LED connected to the pin Board_LED1 with a delay of 1 second
+//The LED connected to the pin Board_LED1 blinks with a delay of 1 second
 void blink_led(){
     // configure the LED pin as output
     PIN_Handle ledHandle = PIN_open(&sLed, ledConfig0);
@@ -92,6 +96,7 @@ void blink_led(){
 /* Task Functions */
 
 //THIS TASK SENDS THE INFO TO THE BACKEND
+//PREGUNTA: esa descripción está mal, no? Sería gets info from accelerometer
 void sensorTaskAccGyro (UArg arg0, UArg arg1) {
 
     float ax,ay,az,gx,gy,gz;
@@ -133,7 +138,7 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
 
     while (1) {
 
-        if (programState==READ_DATA){
+        if (programState==WAITING){
             // MPU ask data
             mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz);
 
@@ -239,8 +244,7 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
         if (programState== DATA_READY){
             UART_write(uart,command_to_send, strlen(command_to_send)+1);
             Task_sleep(100000 / Clock_tickPeriod);
-            programState = LED_ON;
-            blink_led();
+            programState = WAITING;
         }
         else if (programState == LED_ON) {
             blink_led();
