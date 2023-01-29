@@ -157,6 +157,7 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
                 sprintf(print_msg, "Cross move %s\n", command_to_send);
                 System_printf(print_msg);
             }
+        }
 
             /*if(ax > 1.3 || ax < -1.3){
                 sendToUART(command_to_send, "id:2401,MSG1:right,ping");
