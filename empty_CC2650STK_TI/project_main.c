@@ -50,7 +50,7 @@ uint8_t uartBuffer[30];
 // Definition of the state machine for the flag
 enum state {WAITING=1, DATA_READY, READ_DATA, LED_ON};
 //SELECT_BUTTON and WARNING_DYING not needed for retake version
-enum state programState = WAITING;
+enum state programState = READ_DATA;
 
 /*LEDS*/
 
@@ -62,10 +62,6 @@ PIN_Config ledConfig0[] = {
    PIN_TERMINATE
 };
 
-PIN_Config ledConfig1[] = {
-   Board_LED1 | PIN_GPIO_OUTPUT_EN | PIN_GPIO_LOW | PIN_PUSHPULL | PIN_DRVSTR_MAX,
-   PIN_TERMINATE
-};
 
 // MPU power pin global variables
 static PIN_Handle hMpuPin;
@@ -76,10 +72,11 @@ static const I2CCC26XX_I2CPinCfg i2cMPUCfg = {
     .pinSCL = Board_I2C0_SCL1
 };
 
+
 //blink the LED connected to the pin Board_LED1 with a delay of 1 second
 void blink_led(){
     // configure the LED pin as output
-    PIN_Handle ledHandle = PIN_open(&ledPinState, ledConfig0);
+    PIN_Handle ledHandle = PIN_open(&sLed, ledConfig0);
     PIN_setOutputValue(ledHandle, Board_LED1, 0);
 
     // loop to blink the LED
@@ -141,6 +138,27 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
             mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz);
 
             if(ax > 1.3 || ax < -1.3){
+                strcpy(command_to_send, "id:2401,MSG1:left-right,ping");
+                programState = DATA_READY;
+                sprintf(print_msg, "Horizontal move %s\n", command_to_send);
+                System_printf(print_msg);
+                }
+
+            else if (ay> 1.3 || ay < -1.3){
+                strcpy(command_to_send, "id:2401,MSG1:up-down,ping");
+                programState = DATA_READY;
+                sprintf(print_msg, "Vertical move %s\n", command_to_send);
+                System_printf(print_msg);
+                }
+
+            else if (az> 1.3 || az < -1.3){
+                strcpy(command_to_send, "id:2401,MSG1:front-back,ping");
+                programState = DATA_READY;
+                sprintf(print_msg, "Cross move %s\n", command_to_send);
+                System_printf(print_msg);
+            }
+
+            /*if(ax > 1.3 || ax < -1.3){
                 sendToUART(command_to_send, "id:2401,MSG1:right,ping");
                 programState = DATA_READY;
                 sprintf(print_msg, "Horizontal move %s\n", command_to_send);
@@ -160,7 +178,7 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
                 sprintf(print_msg, "Cross move %s\n", command_to_send);
                 System_printf(print_msg);
             }
-        }
+        }*/
 
        // Sleep 100ms
         System_flush();
@@ -217,7 +235,7 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
         }
         System_printf(echo_msg);
 
-        if (programState==DATA_READY){
+        if (programState== DATA_READY){
             UART_write(uart,command_to_send, strlen(command_to_send)+1);
             Task_sleep(100000 / Clock_tickPeriod);
             programState = LED_ON;
@@ -262,12 +280,6 @@ Int main(void) {
     if(!hLed) {
         System_abort("Error initializing LED pins\n");
     }
-
-    // creo q esta segunda llamada a PIN_open() es innecesaria.
-    // hLed = PIN_open(&sLed, ledConfig1);
-    // if(!hLed) {
-    //     System_abort("Error initializing LED pins\n");
-    // }
 
 
     /* Sensor Task */
