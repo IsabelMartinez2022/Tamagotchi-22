@@ -45,6 +45,7 @@ char command_to_send[30];
 Char sensorTaskStack[STACKSIZE];
 Char uartTaskStack[STACKSIZE];
 Char buzzerTaskStack[STACKSIZE];
+char command_to_send[25];
 
 uint8_t uartBuffer[30];
 
@@ -164,28 +165,6 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
             }
         }
 
-            /*if(ax > 1.3 || ax < -1.3){
-                sendToUART(command_to_send, "id:2401,MSG1:right,ping");
-                programState = DATA_READY;
-                sprintf(print_msg, "Horizontal move %s\n", command_to_send);
-                System_printf(print_msg);
-            }
-
-            else if (ay> 1.3 || ay < -1.3){
-                sendToUART(command_to_send, "id:2401,MSG1:up,ping");
-                programState = DATA_READY;
-                sprintf(print_msg, "Vertical move %s\n", command_to_send);
-                System_printf(print_msg);
-            }
-
-            else if (az> 1.3 || az < -1.3){
-                sendToUART(command_to_send, "id:2401,MSG1:top,ping");
-                programState = DATA_READY;
-                sprintf(print_msg, "Cross move %s\n", command_to_send);
-                System_printf(print_msg);
-            }
-        }*/
-
        // Sleep 100ms
         System_flush();
         Task_sleep(100000 / Clock_tickPeriod);
@@ -209,6 +188,8 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
     char input[80];
     int found;
 
+    /* Initialize UART parameters */
+
     // Setup here UART connection as 9600,8n1
     UART_Params_init(&uartParams);
     uartParams.writeDataMode = UART_DATA_TEXT;
@@ -216,21 +197,22 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
     uartParams.baudRate = 9600;
     uartParams.readMode = UART_MODE_BLOCKING;
     uartParams.readEcho = UART_ECHO_OFF;
-    //uartParams.readCallback = &uartFxn; //Decided to use Blocking method
     uartParams.dataLength = UART_LEN_8;
     uartParams.parityType = UART_PAR_NONE;
     uartParams.stopBits = UART_STOP_ONE;
 
+    /* Open UART with the initialized parameters */
     uart = UART_open(Board_UART0, &uartParams);
-
+    /* Check if UART open was successful */
     if (uart == NULL) {
         System_abort("Error opening the UART");
     }
-
+    /* Infinite loop for the task */
     while (1) {
         // Print out sensor data as string to debug window if the state is correct
-        // Remember to modify state
+        /* Read data from UART */
         UART_read(uart, &input, 80);
+        /* Check if "pong" is found in the input string */
         found = strstr(input, "pong");
 
         if(found!= NULL){
@@ -241,20 +223,22 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
         }
         System_printf(echo_msg);
 
+        /* If the state is DATA_READY, write the command_to_send to UART and sleep for 1sec */
         if (programState== DATA_READY){
             UART_write(uart,command_to_send, strlen(command_to_send)+1);
             Task_sleep(100000 / Clock_tickPeriod);
             programState = WAITING;
         }
+        /* If the state is LED_ON, call the blink_led() function and sleep for 1sec */
         else if (programState == LED_ON) {
             blink_led();
             Task_sleep(1000000 / Clock_tickPeriod);
             programState = WAITING;
         }
-
+        /* Flush the system buffer */
         System_flush();
 
-        // Once per second, you can modify this
+        // 1second of sleep
         Task_sleep(100000 / Clock_tickPeriod);
     }
 }
