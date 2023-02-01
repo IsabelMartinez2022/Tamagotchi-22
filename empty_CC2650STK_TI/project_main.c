@@ -37,7 +37,7 @@ Nieves Núñez and Isabel Martínez
 /*Global variables*/
 char csv[80], *token;
 const char s[2] = ",";
-char command_to_send[30];
+//char command_to_send[30];
 
 
 /* Task */
