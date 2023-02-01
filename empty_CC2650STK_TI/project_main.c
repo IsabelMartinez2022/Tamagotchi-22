@@ -6,6 +6,8 @@ Nieves Núñez and Isabel Martínez
 /* C Standard library */
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
+
 
 #include <inttypes.h>
 
@@ -84,12 +86,10 @@ void blink_led(){
     PIN_setOutputValue(ledHandle, Board_LED1, 0);
 
     // loop to blink the LED
-    while(1){
         PIN_setOutputValue(ledHandle, Board_LED1, 1);
         Task_sleep(1000000 / Clock_tickPeriod);
         PIN_setOutputValue(ledHandle, Board_LED1, 0);
         Task_sleep(1000000 / Clock_tickPeriod);
-    }
 }
 
 /* Task Functions:
@@ -153,16 +153,16 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
                 }
 
             else if (ay> 1.3 && gy <30|| ay < -1.3){
-                strcpy(command_to_send, "id:2401,MSG1:up-down,ping");
+                strcpy(command_to_send, "id:2401,MSG1:front-back,ping");
                 programState = DATA_READY;
-                sprintf(print_msg, "Vertical move %s\n", command_to_send);
+                sprintf(print_msg, "Cross move %s\n", command_to_send);
                 System_printf(print_msg);
                 }
 
             else if (az> 1.3 || az < -1.3){
-                strcpy(command_to_send, "id:2401,MSG1:front-back,ping");
+                strcpy(command_to_send, "id:2401,MSG1:up-down,ping");
                 programState = DATA_READY;
-                sprintf(print_msg, "Cross move %s\n", command_to_send);
+                sprintf(print_msg, "Vertical move %s\n", command_to_send);
                 System_printf(print_msg);
             }
         }
@@ -188,7 +188,7 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
 
     char echo_msg[50];
     char input[80];
-    int found;
+    char * found;
 
     /* Initialize UART parameters */
 
@@ -202,6 +202,7 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
     uartParams.dataLength = UART_LEN_8;
     uartParams.parityType = UART_PAR_NONE;
     uartParams.stopBits = UART_STOP_ONE;
+    uartParams.readTimeout = 100000 / Clock_tickPeriod;
 
     /* Open UART with the initialized parameters */
     uart = UART_open(Board_UART0, &uartParams);
@@ -215,23 +216,25 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
         /* Read data from UART */
         UART_read(uart, &input, 80);
         /* Check if "pong" is found in the input string */
-        found = strstr(input, "pong");
-
+        found = strstr(&input, "pong");
+        //found = NULL;
         if(found!= NULL){
             sprintf(echo_msg, "Received: %s\n", input);
             System_printf(echo_msg);
+            System_flush();
             //programState = LED_ON;
-            blink_led();
+            //blink_led();
             //delete program state if still doesnt work
         }
-        System_printf(echo_msg);
-
+        //System_printf(echo_msg);
+        /* Flush the system buffer */
+        //System_flush();
         /* If the state is DATA_READY, write the command_to_send to UART and sleep for 1sec */
         if (programState== DATA_READY){
             UART_write(uart,command_to_send, strlen(command_to_send)+1);
             Task_sleep(100000 / Clock_tickPeriod);
             //programState = WAITING;
-            programState == LED_ON;
+            programState = LED_ON;
         }
         /* If the state is LED_ON, call the blink_led() function and sleep for 1sec then goes to waiting state*/
         else if (programState == LED_ON) {
@@ -239,11 +242,10 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
             Task_sleep(1000000 / Clock_tickPeriod);
             programState = WAITING;
         }
-        /* Flush the system buffer */
-        System_flush();
+
 
         // 1second of sleep
-        Task_sleep(100000 / Clock_tickPeriod);
+        Task_sleep(1000000 / Clock_tickPeriod);
     }
 }
 
