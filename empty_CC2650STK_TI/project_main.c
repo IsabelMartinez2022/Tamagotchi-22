@@ -92,11 +92,13 @@ void blink_led(){
     }
 }
 
+/* Task Functions:
+ * The program starts by initializing the I2C bus and the MPU9250 sensor.
+ * The sensor task then reads data from the MPU9250, including the values for acceleration and angular velocity,
+ * in the x, y, and z directions. The program then enters a loop where it periodically reads the values from the MPU9250,
+ * formats them into a string, and sends the string through UART to a backend system. Additionally, a LED is used to signal
+ * the state of the system: it blinks to indicate that the system is waiting for data, and it is turned on when data is ready to be sent.*/
 
-/* Task Functions */
-
-//THIS TASK SENDS THE INFO TO THE BACKEND
-//PREGUNTA: esa descripción está mal, no? Sería gets info from accelerometer
 void sensorTaskAccGyro (UArg arg0, UArg arg1) {
 
     float ax,ay,az,gx,gy,gz;
@@ -136,20 +138,21 @@ void sensorTaskAccGyro (UArg arg0, UArg arg1) {
     System_printf("MPU9250: Setup and calibration OK\n");
     System_flush();
 
+    //infinite loop
     while (1) {
 
         if (programState==WAITING){
             // MPU ask data
             mpu9250_get_data(&i2cMPU, &ax, &ay, &az, &gx, &gy, &gz);
 
-            if(ax > 1.3 || ax < -1.3){
+            if(ax > 1.3 && gx <30 || ax < -1.3 ){
                 strcpy(command_to_send, "id:2401,MSG1:left-right,ping");
                 programState = DATA_READY;
                 sprintf(print_msg, "Horizontal move %s\n", command_to_send);
                 System_printf(print_msg);
                 }
 
-            else if (ay> 1.3 || ay < -1.3){
+            else if (ay> 1.3 && gy <30|| ay < -1.3){
                 strcpy(command_to_send, "id:2401,MSG1:up-down,ping");
                 programState = DATA_READY;
                 sprintf(print_msg, "Vertical move %s\n", command_to_send);
@@ -226,9 +229,10 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
         if (programState== DATA_READY){
             UART_write(uart,command_to_send, strlen(command_to_send)+1);
             Task_sleep(100000 / Clock_tickPeriod);
-            programState = WAITING;
+            //programState = WAITING;
+            programState == LED_ON
         }
-        /* If the state is LED_ON, call the blink_led() function and sleep for 1sec */
+        /* If the state is LED_ON, call the blink_led() function and sleep for 1sec then goes to waiting state*/
         else if (programState == LED_ON) {
             blink_led();
             Task_sleep(1000000 / Clock_tickPeriod);
