@@ -45,7 +45,6 @@ char command_to_send[30];
 Char sensorTaskStack[STACKSIZE];
 Char uartTaskStack[STACKSIZE];
 Char buzzerTaskStack[STACKSIZE];
-char command_to_send[25];
 
 uint8_t uartBuffer[30];
 
