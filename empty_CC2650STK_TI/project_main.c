@@ -37,7 +37,7 @@ Nieves Núñez and Isabel Martínez
 /*Global variables*/
 char csv[80], *token;
 const char s[2] = ",";
-//char command_to_send[30];
+char command_to_send[30];
 
 
 /* Task */
@@ -230,7 +230,7 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
             UART_write(uart,command_to_send, strlen(command_to_send)+1);
             Task_sleep(100000 / Clock_tickPeriod);
             //programState = WAITING;
-            programState == LED_ON
+            programState == LED_ON;
         }
         /* If the state is LED_ON, call the blink_led() function and sleep for 1sec then goes to waiting state*/
         else if (programState == LED_ON) {
