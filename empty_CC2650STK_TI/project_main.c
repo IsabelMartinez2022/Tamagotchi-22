@@ -220,8 +220,9 @@ void uartTaskFxn(UArg arg0, UArg arg1) {
         if(found!= NULL){
             sprintf(echo_msg, "Received: %s\n", input);
             System_printf(echo_msg);
-            programState = LED_ON;
+            //programState = LED_ON;
             blink_led();
+            //delete program state if still doesnt work
         }
         System_printf(echo_msg);
 
